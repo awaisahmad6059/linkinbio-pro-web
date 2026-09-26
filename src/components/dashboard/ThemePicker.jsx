@@ -48,7 +48,12 @@ const ThemePicker = ({ value, onChange }) => (
             <div className="theme-tile-name">
               <span>{theme.name}</span>
               {active ? (
-                <motion.span className="theme-tile-check" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 22 }}>
+                <motion.span
+                  className="theme-tile-check"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 24, mass: 0.6 }}
+                >
                   ✓
                 </motion.span>
               ) : (

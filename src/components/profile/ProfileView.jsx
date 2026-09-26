@@ -70,8 +70,8 @@ export const ProfileView = ({
 
         <motion.h1
           className="profile-name"
-          initial={animate ? { opacity: 0, y: 14 } : false}
-          animate={{ opacity: 1, y: 0 }}
+          initial={animate ? { opacity: 0, y: 14, scale: 0.97 } : false}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.42, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
         >
           {displayName}
@@ -116,7 +116,8 @@ export const ProfileView = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   variants={animate ? itemVariants : undefined}
-                  whileTap={animate ? { scale: 0.975 } : { scale: 0.975 }}
+                  whileHover={animate ? { y: -2 } : undefined}
+                  whileTap={{ scale: 0.97 }}
                   onClick={(e) => onLinkClick?.(link, e)}
                 >
                   <span className="plink-icon" style={{ background: platform.color, color: '#fff' }}>

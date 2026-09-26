@@ -7,6 +7,7 @@
 
 .profile {
   --pf-bg: #ffffff;
+  --pf-bg-image: none;
   --pf-text: #111111;
   --pf-sub: #6b7280;
   --pf-btn-bg: #ffffff;
@@ -15,10 +16,14 @@
   --pf-btn-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   --pf-btn-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.1);
   --pf-avatar-ring: rgba(17, 17, 17, 0.1);
+  --pf-avatar-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --pf-accent: #6366f1;
   --pf-font: var(--font);
   --pf-title-weight: 750;
-  --pf-radius: 14px;
+  --pf-radius: 16px;
   --pf-btn-pad: 15px;
+  --pf-avatar-size: 118px;
+  --pf-ring-anim: none;
 
   position: relative;
   min-height: 100%;
@@ -26,6 +31,7 @@
   display: flex;
   justify-content: center;
   background: var(--pf-bg);
+  background-image: var(--pf-bg-image);
   color: var(--pf-text);
   font-family: var(--pf-font);
   overflow-x: hidden;
@@ -34,9 +40,9 @@
 
 .profile-inner {
   width: 100%;
-  max-width: 460px;
+  max-width: 420px;
   margin: 0 auto;
-  padding: 56px 22px 40px;
+  padding: 64px 22px 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -47,18 +53,19 @@
 
 .profile-avatar {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: var(--pf-avatar-size);
+  height: var(--pf-avatar-size);
   border-radius: 50%;
   overflow: hidden;
   display: grid;
   place-items: center;
   background: var(--pf-btn-bg);
   color: var(--pf-text);
-  font-size: 32px;
+  font-size: 38px;
   font-weight: 700;
   border: 3px solid var(--pf-avatar-ring);
-  box-shadow: var(--pf-btn-shadow);
+  box-shadow: var(--pf-avatar-shadow);
+  animation: var(--pf-ring-anim);
 }
 
 .profile-avatar img {
@@ -68,26 +75,26 @@
 }
 
 .profile-name {
-  margin-top: 18px;
-  font-size: 24px;
-  line-height: 1.2;
+  margin-top: 24px;
+  font-size: 27px;
+  line-height: 1.18;
   font-weight: var(--pf-title-weight);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: var(--pf-text);
   overflow-wrap: anywhere;
 }
 
 .profile-handle {
-  margin-top: 5px;
+  margin-top: 8px;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--pf-sub);
 }
 
 .profile-bio {
-  margin-top: 12px;
+  margin-top: 16px;
   font-size: 14.5px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--pf-sub);
   max-width: 34ch;
   overflow-wrap: break-word;
@@ -114,8 +121,8 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 26px;
+  gap: 13px;
+  margin-top: 34px;
 }
 
 .plink {
@@ -151,10 +158,11 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  font-size: 17px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 15px;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .plink-arrow {
@@ -202,15 +210,18 @@
 }
 
 .profile-footer {
-  margin-top: 30px;
-  font-size: 12.5px;
+  margin-top: 38px;
+  font-size: 11.5px;
   color: var(--pf-sub);
+  opacity: 0.62;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
+  letter-spacing: 0.01em;
 }
 .profile-footer a {
   font-weight: 700;
+  color: var(--pf-sub);
   transition: opacity var(--t) var(--ease);
 }
 .profile-footer a:hover {
@@ -232,22 +243,27 @@
    ========================================================================== */
 
 .theme-minimal {
-  --pf-bg: #ffffff;
+  --pf-bg: #fbfbfa;
+  --pf-bg-image: radial-gradient(900px 520px at 50% -8%, #ffffff 0%, #f4f3f0 55%, #ecebe7 100%);
   --pf-text: #101014;
-  --pf-sub: #71717a;
+  --pf-sub: #6f6f78;
   --pf-btn-bg: #ffffff;
   --pf-btn-text: #101014;
-  --pf-btn-border: #e4e4e7;
-  --pf-btn-shadow: none;
-  --pf-btn-shadow-hover: 0 4px 14px rgba(16, 16, 20, 0.07);
-  --pf-radius: 12px;
+  --pf-btn-border: rgba(16, 16, 20, 0.07);
+  --pf-btn-shadow: 0 1px 2px rgba(16, 16, 20, 0.04), 0 6px 16px rgba(16, 16, 20, 0.06);
+  --pf-btn-shadow-hover: 0 4px 10px rgba(16, 16, 20, 0.07), 0 16px 32px rgba(16, 16, 20, 0.11);
+  --pf-radius: 16px;
+  --pf-accent: #101014;
   --pf-avatar-ring: #101014;
+  --pf-avatar-shadow: 0 0 0 4px rgba(16, 16, 20, 0.06), 0 14px 34px rgba(16, 16, 20, 0.16);
+  --pf-ring-anim: pfRingPulse 7s ease-in-out infinite;
 }
 .theme-minimal .plink {
   font-weight: 550;
 }
 .theme-minimal .plink:hover {
-  border-color: #101014;
+  border-color: rgba(16, 16, 20, 0.32);
+  background: #fff;
 }
 
 /* ==========================================================================
@@ -258,21 +274,21 @@
   --pf-bg: #0b0b0f;
   --pf-text: #f4f4f5;
   --pf-sub: #8e8e99;
-  --pf-btn-bg: rgba(255, 255, 255, 0.055);
+  --pf-btn-bg: rgba(255, 255, 255, 0.06);
   --pf-btn-text: #f4f4f5;
-  --pf-btn-border: rgba(255, 255, 255, 0.1);
-  --pf-btn-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 8px 22px rgba(0, 0, 0, 0.5);
-  --pf-btn-shadow-hover: 0 10px 34px rgba(120, 90, 255, 0.22), 0 0 0 1px rgba(160, 140, 255, 0.28);
-  --pf-avatar-ring: rgba(255, 255, 255, 0.14);
-  --pf-radius: 14px;
-  background: radial-gradient(1100px 620px at 50% -10%, #1d1836 0%, #0b0b0f 62%);
+  --pf-btn-border: rgba(255, 255, 255, 0.11);
+  --pf-btn-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 10px 26px rgba(0, 0, 0, 0.5);
+  --pf-btn-shadow-hover: 0 12px 38px rgba(120, 90, 255, 0.24), 0 0 0 1px rgba(160, 140, 255, 0.3);
+  --pf-avatar-ring: #8b93ff;
+  --pf-accent: #8b93ff;
+  --pf-avatar-shadow: 0 0 0 4px rgba(129, 140, 248, 0.16), 0 14px 36px rgba(0, 0, 0, 0.6);
+  --pf-ring-anim: pfRingPulse 7.5s ease-in-out infinite;
+  --pf-radius: 16px;
+  --pf-bg-image: radial-gradient(1100px 620px at 50% -10%, #1d1836 0%, #0b0b0f 62%);
 }
 .theme-dark .plink:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(160, 140, 255, 0.4);
-}
-.theme-dark .profile-avatar {
-  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.14), 0 10px 30px rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(160, 140, 255, 0.42);
 }
 
 /* ==========================================================================
@@ -282,13 +298,16 @@
 .theme-gradient {
   --pf-bg: #6d3bf5;
   --pf-text: #ffffff;
-  --pf-sub: rgba(255, 255, 255, 0.82);
-  --pf-btn-bg: rgba(255, 255, 255, 0.14);
+  --pf-sub: rgba(255, 255, 255, 0.84);
+  --pf-btn-bg: rgba(255, 255, 255, 0.15);
   --pf-btn-text: #ffffff;
-  --pf-btn-border: rgba(255, 255, 255, 0.28);
-  --pf-btn-shadow: 0 8px 24px rgba(24, 8, 62, 0.22);
-  --pf-btn-shadow-hover: 0 14px 38px rgba(24, 8, 62, 0.34);
-  --pf-avatar-ring: rgba(255, 255, 255, 0.55);
+  --pf-btn-border: rgba(255, 255, 255, 0.3);
+  --pf-btn-shadow: 0 8px 26px rgba(24, 8, 62, 0.24);
+  --pf-btn-shadow-hover: 0 16px 42px rgba(24, 8, 62, 0.36);
+  --pf-avatar-ring: rgba(255, 255, 255, 0.7);
+  --pf-accent: #a855f7;
+  --pf-avatar-shadow: 0 0 0 4px rgba(255, 255, 255, 0.32), 0 16px 44px rgba(24, 8, 62, 0.38);
+  --pf-ring-anim: pfRingPulse 6.5s ease-in-out infinite;
   --pf-radius: 16px;
 
   /* Slow, subtle hue drift so the page never feels static */
@@ -301,10 +320,8 @@
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 .theme-gradient .plink:hover {
-  background: rgba(255, 255, 255, 0.24);
-}
-.theme-gradient .profile-avatar {
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.35), 0 14px 40px rgba(24, 8, 62, 0.35);
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 /* Soft drifting colour blobs layered over the gradient */
 .theme-gradient::before,
@@ -373,18 +390,17 @@
   --pf-btn-text: #15121f;
   --pf-btn-border: transparent;
   --pf-btn-shadow: 0 6px 0 rgba(0, 0, 0, 0.13);
-  --pf-btn-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.2);
+  --pf-btn-shadow-hover: 0 14px 34px rgba(0, 0, 0, 0.22);
   --pf-avatar-ring: #ffffff;
+  --pf-accent: #15121f;
+  --pf-avatar-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28), 0 10px 0 rgba(0, 0, 0, 0.12);
+  --pf-ring-anim: pfRingPulseBold 7s ease-in-out infinite;
   --pf-radius: 18px;
   --pf-title-weight: 800;
-  background: linear-gradient(180deg, #ff4d8d 0%, #ff2d6f 48%, #f01e5a 100%);
+  --pf-bg-image: linear-gradient(180deg, #ff4d8d 0%, #ff2d6f 48%, #f01e5a 100%);
 }
 .theme-bold .profile-inner {
-  padding-top: 60px;
-}
-.theme-bold .profile-avatar {
-  border-width: 4px;
-  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.12);
+  padding-top: 66px;
 }
 .theme-bold .plink {
   font-weight: 750;
@@ -398,11 +414,46 @@
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.13);
 }
 .theme-bold .plink-icon {
-  border-radius: 9px;
-  background: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.24);
 }
 .theme-bold .plink:nth-child(odd) {
   --pf-btn-bg: #fffdf7;
+}
+
+/* Shared avatar breathing motion — a barely noticeable pulse on the ring so the
+   page feels alive without ever pulling attention away from the links. Each
+   theme supplies its own accent colour through these keyframes. */
+@keyframes pfRingPulse {
+  0%,
+  100% {
+    box-shadow: var(--pf-avatar-shadow);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--pf-accent) 22%, transparent),
+      0 0 0 1px var(--pf-avatar-ring), 0 20px 46px rgba(0, 0, 0, 0.18);
+  }
+}
+
+@keyframes pfRingPulseSage {
+  0%,
+  100% {
+    box-shadow: var(--pf-avatar-shadow);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(125, 138, 95, 0.2), 0 0 0 1px var(--pf-avatar-ring),
+      0 22px 48px rgba(74, 84, 62, 0.26);
+  }
+}
+
+@keyframes pfRingPulseBold {
+  0%,
+  100% {
+    box-shadow: var(--pf-avatar-shadow);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.3), 0 0 0 1px var(--pf-avatar-ring),
+      0 14px 4px rgba(0, 0, 0, 0.14);
+  }
 }
 
 /* ==========================================================================
@@ -413,35 +464,35 @@
   --pf-bg: #f3efe4;
   --pf-text: #33372c;
   --pf-sub: #6d7261;
-  --pf-btn-bg: #dfe5d4;
+  --pf-btn-bg: #fdfcf8;
   --pf-btn-text: #37402f;
-  --pf-btn-border: rgba(55, 64, 47, 0.1);
-  --pf-btn-shadow: 0 2px 10px rgba(74, 84, 62, 0.08);
-  --pf-btn-shadow-hover: 0 10px 24px rgba(74, 84, 62, 0.16);
-  --pf-avatar-ring: #fff;
+  --pf-btn-border: rgba(55, 64, 47, 0.08);
+  --pf-btn-shadow: 0 1px 2px rgba(74, 84, 62, 0.05), 0 8px 20px rgba(74, 84, 62, 0.09);
+  --pf-btn-shadow-hover: 0 4px 12px rgba(74, 84, 62, 0.08), 0 18px 36px rgba(74, 84, 62, 0.16);
+  --pf-avatar-ring: #7d8a5f;
+  --pf-accent: #7d8a5f;
+  --pf-avatar-shadow: 0 0 0 4px rgba(125, 138, 95, 0.16), 0 16px 36px rgba(74, 84, 62, 0.22);
+  --pf-ring-anim: pfRingPulseSage 8s ease-in-out infinite;
   --pf-font: var(--font);
   --pf-title-weight: 500;
-  --pf-radius: 14px;
-  background: linear-gradient(170deg, #f6f2e7 0%, #e7ecdc 100%);
+  --pf-radius: 16px;
+  --pf-bg-image: radial-gradient(820px 500px at 50% -10%, #faf7ee 0%, #eef0e0 48%, #dfe5d1 100%);
 }
 .theme-nature .profile-name {
   font-family: var(--font-serif);
-  font-size: 30px;
+  font-size: 33px;
   font-weight: 500;
-  letter-spacing: -0.01em;
-}
-.theme-nature .profile-avatar {
-  border-width: 4px;
-  box-shadow: 0 6px 18px rgba(74, 84, 62, 0.16);
+  letter-spacing: -0.015em;
 }
 .theme-nature .plink {
   font-weight: 550;
 }
 .theme-nature .plink:hover {
-  background: #d5ddc6;
+  background: #ffffff;
+  border-color: rgba(125, 138, 95, 0.34);
 }
 .theme-nature .plink-icon {
-  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 2px 7px rgba(74, 84, 62, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 }
 .theme-nature .profile-footer a {
   color: #55604a;
@@ -459,6 +510,7 @@
   height: 58px;
   font-size: 20px;
   border-width: 2px;
+  animation: none;
 }
 .profile.is-compact .profile-name {
   margin-top: 12px;
@@ -516,18 +568,17 @@
 /* Public page is viewed mostly on phones */
 @media (max-width: 520px) {
   .profile-inner {
-    padding: 40px 18px 34px;
+    padding: 46px 18px 38px;
   }
   .profile-avatar {
-    width: 84px;
-    height: 84px;
-    font-size: 28px;
+    --pf-avatar-size: 104px;
+    font-size: 34px;
   }
   .profile-name {
-    font-size: 21px;
+    font-size: 24px;
   }
   .theme-nature .profile-name {
-    font-size: 26px;
+    font-size: 29px;
   }
   .plink {
     font-size: 15px;
