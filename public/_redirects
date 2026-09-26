@@ -1,0 +1,4 @@
+# SPA fallback: every unknown path is served by the React router, not by the
+# static host. Without this, refreshing or opening /dashboard or /:username
+# directly returns the host's 404 page instead of the app.
+/*    /index.html   200
