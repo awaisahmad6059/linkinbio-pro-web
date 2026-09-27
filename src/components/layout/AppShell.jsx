@@ -47,10 +47,14 @@ const AppShell = ({ children }) => {
     }
   };
 
-  // The app-level effect in App.jsx owns the redirect to the landing page, so
-  // it can run after the session is cleared. Navigating here as well raced the
-  // exit animation and left the address bar on the old path.
+  // Navigation happens *before* the session is torn down, and that order is the
+  // whole fix. Clearing the user first left this still sitting on a protected
+  // route with `user === null`, so the guard immediately issued its own redirect
+  // to /login. Because React batches both updates into a single render, the
+  // location was already '/' by the time the guard woke up and there was nothing
+  // left to redirect away from.
   const onLogout = () => {
+    navigate('/', { replace: true });
     logout();
   };
 

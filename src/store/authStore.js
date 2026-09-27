@@ -19,8 +19,14 @@ export const useAuthStore = create((set, get) => ({
    */
   justSignedIn: false,
   /**
-   * True between a sign-out and the moment the router has actually left the
-   * protected area. Guards consult it so exactly one navigation happens.
+   * True from the moment a sign-out is requested until the router has actually
+   * left the protected area.
+   *
+   * React batches the navigation and the session teardown into a single render,
+   * so during that render the location is still /dashboard while the user is
+   * already null. Without this flag the protected guard reads that intermediate
+   * state and issues its own /login redirect, which then wins over the intended
+   * landing page — the exact stale-URL bug. The guard suspends while it is set.
    */
   loggingOut: false,
 
@@ -65,27 +71,27 @@ export const useAuthStore = create((set, get) => ({
     return user;
   },
 
+  /**
+   * Tears down the session. The caller is responsible for navigating away from
+   * any protected route *before* calling this — if the user is dropped first,
+   * the route guard sees `user === null` on a protected path and redirects to
+   * /login, which is the stale-URL bug this ordering exists to prevent.
+   */
   logout: () => {
     clearToken();
-    // `loggingOut` tells the router that a sign-out is under way so the
-    // protected guard suspends instead of redirecting to /login. Without it two
-    // navigations fired in the same commit and the guard's /login won, leaving
-    // the address bar on /login while the landing page was already painted.
-    // `justSignedIn` is cleared too: it gates the guest-route redirect, and
-    // leaving it true would strand a signed-out visitor on the login screen.
+    set({ loggingOut: true });
     set({
       user: null,
       links: [],
       status: 'idle',
       error: null,
       justSignedIn: false,
-      loggingOut: true,
     });
   },
 
   setUser: (user) => set({ user }),
 
-  /** Lets the router signal that the post-logout navigation has completed. */
+  /** Released by the router once it is safely off every protected route. */
   setLoggingOut: (loggingOut) => set({ loggingOut }),
 
   setLinks: (links) => set({ links }),

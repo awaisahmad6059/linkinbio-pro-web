@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiAtSign, FiLock, FiMail, FiTrash2 } from 'react-icons/fi';
 import PageTransition from '../components/common/PageTransition.jsx';
@@ -16,6 +17,7 @@ import { useToastStore } from '../store/toastStore.js';
 const SettingsPage = () => {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
 
   const success = useToastStore((s) => s.success);
@@ -108,6 +110,10 @@ const SettingsPage = () => {
     setDeleting(true);
     try {
       await authApi.deleteAccount();
+      // Navigate first, tear the session down second — the same ordering
+      // AppShell.onLogout uses. Dropping the user while still on this protected
+      // route let the guard redirect to /login over the landing page.
+      navigate('/', { replace: true });
       logout();
     } catch (err) {
       error(parseApiError(err).message);

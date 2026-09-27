@@ -15,6 +15,13 @@ import SettingsPage from './pages/SettingsPage.jsx';
 import PublicProfilePage from './pages/PublicProfilePage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
+/**
+ * Routes a signed-out visitor is allowed to settle on. The post-logout effect
+ * waits for one of these before releasing the guard, so a stale /login can
+ * never be re-applied over the landing page.
+ */
+const PUBLIC_ROUTES = new Set(['/', '/login', '/signup']);
+
 /** Blocks the dashboard until the stored JWT has been checked. */
 const ProtectedRoute = ({ children }) => {
   const { user, authChecked, loggingOut } = useAuthStore();
@@ -22,14 +29,13 @@ const ProtectedRoute = ({ children }) => {
 
   if (!authChecked) return <RouteFallback />;
 
-  // While a logout is in flight the app-level effect is already navigating to
-  // the landing page. Redirecting here as well is what produced the stale
-  // /login address: two competing navigations in the same commit, and the
-  // winning one belonged to this guard rather than to the logout. Rendering
-  // nothing keeps the dashboard out of the way without a second redirect.
-  if (!user) {
-    return loggingOut ? <RouteFallback /> : <Navigate to="/login" state={{ from: location.pathname }} replace />;
-  }
+  // A sign-out is in flight. The navigation and the session teardown are batched
+  // into one render, so this component can be evaluated on a protected path
+  // with `user === null` *after* the redirect was already issued. Suspending is
+  // what stops the guard from issuing a second, competing redirect to /login.
+  if (loggingOut) return <RouteFallback />;
+
+  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   return children;
 };
 
@@ -63,30 +69,35 @@ const App = () => {
   }, [location.pathname]);
 
   /**
-   * The one and only post-logout redirect.
+   * Post-logout navigation and the session-loss safety net.
    *
-   * The session is cleared synchronously by the store, so by the time this
-   * effect runs the user object is already gone and this is the single
-   * navigation that moves the app out of the protected area. Once it has
-   * happened, `loggingOut` is released so the guards resume normal duty for
-   * the rest of the session.
+   * The logout button navigates first and clears the session second (see
+   * AppShell.onLogout). Both land in one batched render, so this effect is the
+   * place where the two halves are reconciled: it guarantees the landing page is
+   * reached, and it holds `loggingOut` until the router is genuinely resting on
+   * a public route. Releasing the flag any earlier lets the protected guard
+   * re-arm on an intermediate render and re-apply /login over the landing page.
    */
   useEffect(() => {
     if (!authChecked) return;
 
     if (loggingOut) {
-      if (location.pathname !== '/') {
-        navigate('/', { replace: true });
-      } else {
-        setLoggingOut(false);
+      // Only release the flag once the router has actually committed the public
+      // route. Checking `location.pathname` here was not enough: during the exit
+      // animation the location still reports the outgoing protected path, so the
+      // branch re-issued `navigate('/')` on every render and the guard re-armed
+      // in between. A short deferred release lets the navigation commit first.
+      if (PUBLIC_ROUTES.has(location.pathname)) {
+        const t = setTimeout(() => setLoggingOut(false), 0);
+        return () => clearTimeout(t);
       }
-      return;
+      navigate('/', { replace: true });
+      return undefined;
     }
 
-    // A session that expires on its own (cleared token, revoked account) has
-    // no loggingOut flag, so the guard below catches it. Keep this as the
-    // fallback rather than a second source of truth.
-    if (wasSignedIn.current && !user && location.pathname !== '/') {
+    // A session that expires on its own (revoked token, deleted account) never
+    // goes through the logout button, so nothing raised the flag. Catch it here.
+    if (wasSignedIn.current && !user && !PUBLIC_ROUTES.has(location.pathname)) {
       navigate('/', { replace: true });
     }
     wasSignedIn.current = Boolean(user);
