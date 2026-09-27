@@ -25,14 +25,28 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-/** Signed-in users should not sit on the login/signup screens — except for
- *  the brief window where the form is playing its success animation. */
-const GuestRoute = ({ children }) => {
-  const { user, authChecked, justSignedIn } = useAuthStore();
-  if (!authChecked) return <RouteFallback />;
-  if (user && !justSignedIn) return <Navigate to="/dashboard" replace />;
-  return children;
-};
+  /** Signed-in users should not sit on the login/signup screens — except for
+   *  the brief window where the form is playing its success animation. */
+  const GuestRoute = ({ children }) => {
+    const { user, authChecked, justSignedIn } = useAuthStore();
+    if (!authChecked) return <RouteFallback />;
+    if (user && !justSignedIn) return <Navigate to="/dashboard" replace />;
+    return children;
+  };
+
+  /**
+   * Sends anyone who is not signed in to the landing page instead of the login
+   * form. Without this, signing out from a deep link left the address bar on
+   * /login: the guard above kept rendering the form because no user was
+   * present, and the redirect a component had already requested was never
+   * honoured.
+   */
+  const PublicOnlyRoute = ({ children }) => {
+    const { user, authChecked } = useAuthStore();
+    if (!authChecked) return <RouteFallback />;
+    if (!user) return <Navigate to="/" replace />;
+    return children;
+  };
 
 const App = () => {
   const location = useLocation();
@@ -53,8 +67,8 @@ const App = () => {
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-          <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
+          <Route path="/login" element={<PublicOnlyRoute><GuestRoute><LoginPage /></GuestRoute></PublicOnlyRoute>} />
+          <Route path="/signup" element={<PublicOnlyRoute><GuestRoute><SignupPage /></GuestRoute></PublicOnlyRoute>} />
 
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/dashboard/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />

@@ -62,7 +62,10 @@ export const useAuthStore = create((set, get) => ({
 
   logout: () => {
     clearToken();
-    set({ user: null, links: [], status: 'idle', error: null });
+    // `justSignedIn` is cleared as well: it gates the guest-route redirect, and
+    // leaving it true would strand a signed-out visitor on the login screen
+    // instead of the landing page.
+    set({ user: null, links: [], status: 'idle', error: null, justSignedIn: false });
   },
 
   setUser: (user) => set({ user }),
