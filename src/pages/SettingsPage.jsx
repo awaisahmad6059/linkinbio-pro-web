@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiAtSign, FiLock, FiMail, FiTrash2 } from 'react-icons/fi';
 import PageTransition from '../components/common/PageTransition.jsx';
@@ -15,7 +14,6 @@ import { useToastStore } from '../store/toastStore.js';
 
 /** Account settings: username, email, password and account deletion. */
 const SettingsPage = () => {
-  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
@@ -111,7 +109,6 @@ const SettingsPage = () => {
     try {
       await authApi.deleteAccount();
       logout();
-      navigate('/', { replace: true });
     } catch (err) {
       error(parseApiError(err).message);
       setDeleting(false);

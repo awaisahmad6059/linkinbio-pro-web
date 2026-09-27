@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
 import { useAuthStore } from './store/authStore.js';
@@ -34,27 +34,13 @@ const ProtectedRoute = ({ children }) => {
     return children;
   };
 
-  /**
-   * Sends anyone who is not signed in to the landing page instead of the login
-   * form. Without this, signing out from a deep link left the address bar on
-   * /login: the guard below kept rendering the form because no user was
-   * present, and the redirect a component had already requested was never
-   * honoured.
-   *
-   * The wait key lets the leaving animation finish before the URL changes, so
-   * the address bar and the painted page never disagree.
-   */
-  const PublicOnlyRoute = ({ children }) => {
-    const { user, authChecked } = useAuthStore();
-    if (!authChecked) return <RouteFallback />;
-    if (!user) return <Navigate to="/" replace />;
-    return children;
-  };
-
 const App = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const bootstrap = useAuthStore((s) => s.bootstrap);
+  const user = useAuthStore((s) => s.user);
   const authChecked = useAuthStore((s) => s.authChecked);
+  const wasSignedIn = useRef(false);
 
   // Restore the session once, before the first protected render.
   useEffect(() => {
@@ -67,32 +53,29 @@ const App = () => {
   }, [location.pathname]);
 
   /**
-   * Keeps the URL honest while a route guard decides where to send someone.
+   * Sends a signed-out visitor back to the landing page.
    *
-   * Signing out from /login left the address bar on /login even though the
-   * landing page was already on screen: the redirect fired while the leaving
-   * animation was still running, so the address update was lost and the
-   * rendered page no longer matched the route the app thought it was on. Links
-   * stayed unclickable until a hard refresh re-synced everything.
-   *
-   * Re-asserting the pathname once the exit animation has finished fixes the
-   * mismatch without introducing a visible jump.
+   * Doing this here, after the session has already been cleared, avoids the
+   * race the individual logout buttons hit: calling navigate() in the same tick
+   * as clearing the user made the redirect lose against the leaving animation,
+   * so the landing page painted while the address bar kept the old path and
+   * every link stayed inert until a manual refresh.
    */
   useEffect(() => {
-    if (!authChecked) return undefined;
-    if (location.pathname !== window.location.pathname) {
-      window.history.replaceState(null, '', `${location.pathname}${window.location.search}`);
+    if (!authChecked) return;
+    if (wasSignedIn.current && !user && location.pathname !== '/') {
+      navigate('/', { replace: true });
     }
-    return undefined;
-  }, [authChecked, location.pathname]);
+    wasSignedIn.current = Boolean(user);
+  }, [authChecked, user, location.pathname, navigate]);
 
   return (
     <>
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<PublicOnlyRoute><GuestRoute><LoginPage /></GuestRoute></PublicOnlyRoute>} />
-          <Route path="/signup" element={<PublicOnlyRoute><GuestRoute><SignupPage /></GuestRoute></PublicOnlyRoute>} />
+          <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+          <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
 
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/dashboard/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />

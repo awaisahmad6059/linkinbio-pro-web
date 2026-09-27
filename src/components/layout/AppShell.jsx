@@ -47,9 +47,11 @@ const AppShell = ({ children }) => {
     }
   };
 
+  // The app-level effect in App.jsx owns the redirect to the landing page, so
+  // it can run after the session is cleared. Navigating here as well raced the
+  // exit animation and left the address bar on the old path.
   const onLogout = () => {
     logout();
-    navigate('/', { replace: true });
   };
 
   return (
