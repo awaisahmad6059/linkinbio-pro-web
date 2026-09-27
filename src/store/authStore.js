@@ -18,6 +18,11 @@ export const useAuthStore = create((set, get) => ({
    * can play its success-checkmark animation before being redirected.
    */
   justSignedIn: false,
+  /**
+   * True between a sign-out and the moment the router has actually left the
+   * protected area. Guards consult it so exactly one navigation happens.
+   */
+  loggingOut: false,
 
   /** Restore a session from the stored JWT on first paint. */
   bootstrap: async () => {
@@ -62,13 +67,26 @@ export const useAuthStore = create((set, get) => ({
 
   logout: () => {
     clearToken();
-    // `justSignedIn` is cleared as well: it gates the guest-route redirect, and
-    // leaving it true would strand a signed-out visitor on the login screen
-    // instead of the landing page.
-    set({ user: null, links: [], status: 'idle', error: null, justSignedIn: false });
+    // `loggingOut` tells the router that a sign-out is under way so the
+    // protected guard suspends instead of redirecting to /login. Without it two
+    // navigations fired in the same commit and the guard's /login won, leaving
+    // the address bar on /login while the landing page was already painted.
+    // `justSignedIn` is cleared too: it gates the guest-route redirect, and
+    // leaving it true would strand a signed-out visitor on the login screen.
+    set({
+      user: null,
+      links: [],
+      status: 'idle',
+      error: null,
+      justSignedIn: false,
+      loggingOut: true,
+    });
   },
 
   setUser: (user) => set({ user }),
+
+  /** Lets the router signal that the post-logout navigation has completed. */
+  setLoggingOut: (loggingOut) => set({ loggingOut }),
 
   setLinks: (links) => set({ links }),
 

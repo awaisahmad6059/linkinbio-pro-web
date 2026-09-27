@@ -17,22 +17,30 @@ import NotFoundPage from './pages/NotFoundPage.jsx';
 
 /** Blocks the dashboard until the stored JWT has been checked. */
 const ProtectedRoute = ({ children }) => {
-  const { user, authChecked } = useAuthStore();
+  const { user, authChecked, loggingOut } = useAuthStore();
   const location = useLocation();
 
   if (!authChecked) return <RouteFallback />;
-  if (!user) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+
+  // While a logout is in flight the app-level effect is already navigating to
+  // the landing page. Redirecting here as well is what produced the stale
+  // /login address: two competing navigations in the same commit, and the
+  // winning one belonged to this guard rather than to the logout. Rendering
+  // nothing keeps the dashboard out of the way without a second redirect.
+  if (!user) {
+    return loggingOut ? <RouteFallback /> : <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
   return children;
 };
 
-  /** Signed-in users should not sit on the login/signup screens — except for
-   *  the brief window where the form is playing its success animation. */
-  const GuestRoute = ({ children }) => {
-    const { user, authChecked, justSignedIn } = useAuthStore();
-    if (!authChecked) return <RouteFallback />;
-    if (user && !justSignedIn) return <Navigate to="/dashboard" replace />;
-    return children;
-  };
+/** Signed-in users should not sit on the login/signup screens — except for
+ *  the brief window where the form is playing its success animation. */
+const GuestRoute = ({ children }) => {
+  const { user, authChecked, justSignedIn } = useAuthStore();
+  if (!authChecked) return <RouteFallback />;
+  if (user && !justSignedIn) return <Navigate to="/dashboard" replace />;
+  return children;
+};
 
 const App = () => {
   const location = useLocation();
@@ -40,6 +48,8 @@ const App = () => {
   const bootstrap = useAuthStore((s) => s.bootstrap);
   const user = useAuthStore((s) => s.user);
   const authChecked = useAuthStore((s) => s.authChecked);
+  const loggingOut = useAuthStore((s) => s.loggingOut);
+  const setLoggingOut = useAuthStore((s) => s.setLoggingOut);
   const wasSignedIn = useRef(false);
 
   // Restore the session once, before the first protected render.
@@ -53,21 +63,34 @@ const App = () => {
   }, [location.pathname]);
 
   /**
-   * Sends a signed-out visitor back to the landing page.
+   * The one and only post-logout redirect.
    *
-   * Doing this here, after the session has already been cleared, avoids the
-   * race the individual logout buttons hit: calling navigate() in the same tick
-   * as clearing the user made the redirect lose against the leaving animation,
-   * so the landing page painted while the address bar kept the old path and
-   * every link stayed inert until a manual refresh.
+   * The session is cleared synchronously by the store, so by the time this
+   * effect runs the user object is already gone and this is the single
+   * navigation that moves the app out of the protected area. Once it has
+   * happened, `loggingOut` is released so the guards resume normal duty for
+   * the rest of the session.
    */
   useEffect(() => {
     if (!authChecked) return;
+
+    if (loggingOut) {
+      if (location.pathname !== '/') {
+        navigate('/', { replace: true });
+      } else {
+        setLoggingOut(false);
+      }
+      return;
+    }
+
+    // A session that expires on its own (cleared token, revoked account) has
+    // no loggingOut flag, so the guard below catches it. Keep this as the
+    // fallback rather than a second source of truth.
     if (wasSignedIn.current && !user && location.pathname !== '/') {
       navigate('/', { replace: true });
     }
     wasSignedIn.current = Boolean(user);
-  }, [authChecked, user, location.pathname, navigate]);
+  }, [authChecked, loggingOut, user, location.pathname, navigate, setLoggingOut]);
 
   return (
     <>
