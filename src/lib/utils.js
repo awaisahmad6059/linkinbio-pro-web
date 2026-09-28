@@ -125,6 +125,63 @@ export const readImageAsDataUrl = (file, maxKB = 320) =>
     reader.readAsDataURL(file);
   });
 
+/**
+ * Reads an image, draws it into a square canvas at `size` and returns a compact
+ * data URL.
+ *
+ * Link icons are drawn at 22-36 CSS pixels, so uploading a full-resolution photo
+ * would waste the user's database for nothing. Re-encoding client-side also
+ * means the file never leaves the browser, and it lets us reject anything the
+ * canvas cannot vouch for.
+ *
+ * SVG is refused on purpose: it is a script-bearing document, and these values
+ * end up as an <img src> on a public page.
+ */
+export const resizeImageToDataUrl = (file, { size = 128, maxKB = 100 } = {}) =>
+  new Promise((resolve, reject) => {
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!file) {
+      reject(new Error('Choose an image file'));
+      return;
+    }
+    if (!allowed.includes(String(file.type).toLowerCase())) {
+      reject(new Error('Use a PNG, JPG or WebP image'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that image'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That file is not a readable image'));
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Your browser could not process that image'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, size, size);
+        // PNG keeps transparency for logos; fall back to JPEG if it is too big.
+        const asPng = canvas.toDataURL('image/png');
+        if (asPng.length / 1024 <= maxKB) {
+          resolve(asPng);
+          return;
+        }
+        const asJpeg = canvas.toDataURL('image/jpeg', 0.82);
+        if (asJpeg.length / 1024 > maxKB) {
+          reject(new Error('That image is too detailed — try a simpler one'));
+          return;
+        }
+        resolve(asJpeg);
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+
 /** Base URL used when telling the user where to share their page. */
 export const publicOrigin = () =>
   import.meta.env.VITE_PUBLIC_URL || window.location.origin;

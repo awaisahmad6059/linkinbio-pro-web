@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowUpRight } from 'react-icons/fi';
-import { getPlatform as platformMeta } from '../../lib/constants.js';
-import { cn, toDestination as destOf } from '../../lib/utils.js';
+import LinkIcon from '../common/LinkIcon.jsx';
+import { cn } from '../../lib/utils.js';
+import { opensInNewTab, OUTBOUND_REL, toDestination as destOf } from '../../lib/linkUrl.js';
 
 /* Link button entrance — staggered slide-up so the list "reveals" itself. */
 const listVariants = {
@@ -107,24 +108,25 @@ export const ProfileView = ({
             animate="show"
           >
             {activeLinks.map((link) => {
-              const platform = platformMeta(link.platform);
+              const href = destOf(link);
+              const newTab = opensInNewTab(href);
               return (
                 <motion.a
                   key={link._id}
-                  href={destOf(link)}
+                  href={href}
                   className="plink"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  // mailto: and tel: must not open a new tab — several browsers
+                  // show an empty one instead of handing off to the mail or
+                  // dialler app. Everything else opens in a new tab safely.
+                  {...(newTab ? { target: '_blank', rel: OUTBOUND_REL } : {})}
                   variants={animate ? itemVariants : undefined}
                   whileHover={animate ? { y: -2 } : undefined}
                   whileTap={{ scale: 0.97 }}
                   onClick={(e) => onLinkClick?.(link, e)}
                 >
-                  <span className="plink-icon" style={{ background: platform.color, color: '#fff' }}>
-                    <platform.Icon />
-                  </span>
+                  <LinkIcon link={link} className="plink-icon" size={28} tone="solid" />
                   <span className="plink-label">{link.label}</span>
-                  {!compact && <FiArrowUpRight className="plink-arrow" />}
+                  {!compact && newTab && <FiArrowUpRight className="plink-arrow" />}
                 </motion.a>
               );
             })}

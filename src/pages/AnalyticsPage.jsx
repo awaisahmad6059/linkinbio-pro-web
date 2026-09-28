@@ -18,6 +18,7 @@ import AppShell from '../components/layout/AppShell.jsx';
 import AnimatedCounter from '../components/common/AnimatedCounter.jsx';
 import { StatCardSkeleton } from '../components/common/Skeleton.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
+import LinkIcon from '../components/common/LinkIcon.jsx';
 import { analyticsApi, parseApiError } from '../lib/api.js';
 import { useAuthStore } from '../store/authStore.js';
 import { getPlatform } from '../lib/constants.js';
@@ -33,16 +34,20 @@ const tooltipStyle = {
 };
 
 /** Small animated bar used in the per-link breakdown list. */
-const BarRow = ({ label, value, max, platform, delay }) => {
+const BarRow = ({ label, value, max, platform, delay, link }) => {
   const pct = max > 0 ? Math.max((value / max) * 100, value > 0 ? 4 : 0) : 0;
   const meta = getPlatform(platform);
 
   return (
     <div className="bar-row">
       <div className="bar-row-name">
-        <span style={{ color: meta.color, display: 'flex', fontSize: 15 }}>
-          <meta.Icon />
-        </span>
+        <LinkIcon
+          link={link || { platform, url: '' }}
+          size={22}
+          tone="brand"
+          faviconFallback={false}
+          className="bar-row-icon"
+        />
         <span className="truncate">{label}</span>
       </div>
       <div className="bar-row-track">
@@ -272,6 +277,7 @@ const AnalyticsPage = () => {
                     value={link.clickCount}
                     max={maxClicks}
                     platform={link.platform}
+                    link={link}
                     delay={i * 0.06}
                   />
                 ))}

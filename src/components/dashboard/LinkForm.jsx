@@ -1,38 +1,47 @@
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { FiLink, FiPlus, FiX } from 'react-icons/fi';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { FiPlus, FiX } from 'react-icons/fi';
 import Field from '../common/Field.jsx';
 import Button from '../common/Button.jsx';
-import { PLATFORMS } from '../../lib/constants.js';
-import { cn } from '../../lib/utils.js';
+import PlatformPicker from './PlatformPicker.jsx';
+import IconControls from './IconControls.jsx';
+import { getPlatform } from '../../config/platforms.js';
+import {
+  detectPlatform, displayAddress, hostOfValue, looksLikeEmail, normalizeLinkInput,
+  placeholderFor, schemeProblem, urlFieldLabel,
+} from '../../lib/linkUrl.js';
 
-const looksLikeUrl = (value) => {
-  const v = value.trim();
-  if (!v) return false;
-  if (/^mailto:/i.test(v)) return true;
-  if (v.includes('@') && !v.includes(' ')) return true; // bare email address
-  return /^([a-z][a-z0-9+.-]*:\/\/)?[^\s/$.?#][^\s]*$/i.test(v);
-};
+const blankForm = (initial) => ({
+  label: initial?.label || '',
+  // The form always edits the friendly form of the address, so an email link
+  // shows `you@example.com` and never `mailto:you@example.com`.
+  url: initial ? displayAddress(initial) : '',
+  platform: initial?.platform || 'custom',
+  iconType: initial?.iconType || 'auto',
+  iconValue: initial?.iconValue || '',
+  iconColor: initial?.iconColor || '',
+});
 
 /**
  * Add / edit form for a single link.
- * Picking a platform assigns its icon and brand colour automatically.
+ *
+ * The platform is auto-detected from whatever the user pastes, but a manual
+ * pick sticks until the hostname actually changes — so a mis-detected tile can
+ * be corrected without the form fighting back.
  */
 const LinkForm = ({ initial, submitting, onSubmit, onClose }) => {
-  const [form, setForm] = useState({
-    label: initial?.label || '',
-    url: initial?.url || '',
-    platform: initial?.platform || 'instagram',
-  });
+  const [form, setForm] = useState(() => blankForm(initial));
   const [errors, setErrors] = useState({});
 
+  // The hostname as it stood when the user last chose a tile by hand.
+  const manualHost = useRef(null);
+  const lastDetected = useRef(null);
+
   useEffect(() => {
-    setForm({
-      label: initial?.label || '',
-      url: initial?.url || '',
-      platform: initial?.platform || 'instagram',
-    });
+    setForm(blankForm(initial));
     setErrors({});
+    manualHost.current = null;
+    lastDetected.current = null;
   }, [initial]);
 
   const update = (key) => (e) => {
@@ -40,16 +49,92 @@ const LinkForm = ({ initial, submitting, onSubmit, onClose }) => {
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  const applyPlatform = useCallback((key) => {
+    setForm((f) => {
+      const patch = { platform: key };
+      // Suggest a title once, and only while the field is still empty.
+      if (!f.label.trim()) patch.label = getPlatform(key).label;
+      if (key !== 'custom') {
+        // Icon customisations belong to the custom tile.
+        patch.iconType = 'auto';
+        patch.iconValue = '';
+      }
+      return { ...f, ...patch };
+    });
+  }, []);
+
+  const choosePlatform = (key) => {
+    // Remember the host the user picked a tile for, so auto-detection does not
+    // immediately override the manual choice for the same URL.
+    manualHost.current = hostOfValue(form.url);
+    lastDetected.current = null;
+    applyPlatform(key);
+  };
+
+  // Auto-detect, debounced so it does not fight the user mid-typing.
+  useEffect(() => {
+    const raw = form.url.trim();
+    if (!raw) return undefined;
+
+    const timer = setTimeout(() => {
+      const host = hostOfValue(raw);
+
+      // The user picked a tile for this exact host: leave their choice alone.
+      if (manualHost.current && host && host === manualHost.current) return;
+
+      const detected = normalizeLinkInput(raw, form.platform);
+      const key = detected.kind === 'email' ? 'email' : detectPlatform(detected.value);
+
+      if (!key) return;
+      if (lastDetected.current === `${key}|${host}`) return;
+      lastDetected.current = `${key}|${host}`;
+      applyPlatform(key);
+    }, 300);
+
+    return () => clearTimeout(timer);
+    // `form.platform` is intentionally excluded: it must not restart the timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.url, applyPlatform]);
+
   const submit = (e) => {
     e.preventDefault();
     const next = {};
+
+    const raw = form.url.trim();
+    const schemeError = schemeProblem(raw);
+    if (!raw) next.url = 'Paste a URL';
+    else if (schemeError) next.url = schemeError;
+    else {
+      const normalized = normalizeLinkInput(raw, form.platform);
+
+      if (normalized.error) {
+        next.url = normalized.error;
+      } else if (form.platform === 'email' && !looksLikeEmail(normalized.value.replace(/^mailto:/i, ''))) {
+        // A friendly nudge rather than a red block — people paste all kinds of
+        // things into this field.
+        next.url = 'Enter a valid email like name@example.com';
+      } else if (form.platform === 'phone' && !/^tel:\+?\d{7,15}$/.test(normalized.value)) {
+        next.url = 'Enter a phone number like +923001234567';
+      } else if (!normalized.value) {
+        next.url = 'Paste a URL';
+      }
+    }
+
     if (!form.label.trim()) next.label = 'Give your link a title';
-    if (!form.url.trim()) next.url = 'Paste a URL';
-    else if (!looksLikeUrl(form.url)) next.url = 'That does not look like a valid link';
+
     setErrors(next);
     if (Object.keys(next).length) return;
-    onSubmit({ ...form, label: form.label.trim(), url: form.url.trim() });
+
+    const normalized = normalizeLinkInput(form.url, form.platform);
+    onSubmit({
+      ...form,
+      label: form.label.trim(),
+      url: normalized.value,
+    });
   };
+  const fieldLabel = urlFieldLabel(form.platform);
+  const placeholder = form.platform === 'whatsapp' ? '+92 300 1234567' : placeholderFor(form.platform);
+  const isCustom = form.platform === 'custom';
 
   return (
     <motion.form
@@ -79,38 +164,18 @@ const LinkForm = ({ initial, submitting, onSubmit, onClose }) => {
           autoFocus
         />
         <Field
-          label="URL"
-          placeholder="awais.ahmad"
+          label={fieldLabel}
+          placeholder={placeholder}
           value={form.url}
           onChange={update('url')}
           error={errors.url}
+          inputMode={form.platform === 'phone' || form.platform === 'whatsapp' ? 'tel' : 'url'}
         />
       </div>
 
-      <div className="field">
-        <div className="label">Platform</div>
-        <div className="platform-grid" role="radiogroup" aria-label="Link platform">
-          {PLATFORMS.map(({ key, short, Icon, color }) => {
-            const active = form.platform === key;
-            return (
-              <motion.button
-                key={key}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                className={cn('platform-chip', active && 'is-active')}
-                onClick={() => setForm((f) => ({ ...f, platform: key }))}
-                whileTap={{ scale: 0.94 }}
-              >
-                <span className="platform-chip-icon" style={{ color: active ? color : undefined }}>
-                  <Icon />
-                </span>
-                <span className="platform-chip-label">{short}</span>
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
+      <PlatformPicker value={form.platform} url={form.url} onChange={choosePlatform} />
+
+      {isCustom && <IconControls form={form} onChange={setForm} error={errors.icon} />}
 
       <div className="row gap-8" style={{ justifyContent: 'flex-end' }}>
         <Button variant="ghost" onClick={onClose} type="button" disabled={submitting}>

@@ -1,40 +1,26 @@
-import {
-  FaInstagram,
-  FaFacebookF,
-  FaLinkedinIn,
-  FaXTwitter,
-  FaTiktok,
-  FaYoutube,
-  FaWhatsapp,
-  FaSnapchat,
-  FaPinterest,
-  FaThreads,
-  FaEnvelope,
-  FaLink,
-} from 'react-icons/fa6';
+import { PLATFORMS, PLATFORM_MAP, getPlatform } from '../config/platforms.js';
 
 /**
- * Platform catalogue — mirrors `server/src/constants.js`.
- * `color` is used for the icon badge on link cards and inside public link buttons.
+ * Backwards-compatible re-exports.
+ *
+ * The platform catalogue now lives in `src/config/platforms.js` — it is the
+ * single source of truth for the picker, the URL auto-detection and every
+ * rendered icon. These aliases keep the older `getPlatform` import sites
+ * working unchanged.
+ *
+ * The twelve original keys (instagram, facebook, linkedin, twitter, tiktok,
+ * youtube, whatsapp, snapchat, pinterest, threads, email, custom) are preserved
+ * verbatim, so links already stored against them keep resolving.
  */
-export const PLATFORMS = [
-  { key: 'instagram', label: 'Instagram', short: 'Insta', Icon: FaInstagram, color: '#E1306C' },
-  { key: 'facebook', label: 'Facebook', short: 'Face', Icon: FaFacebookF, color: '#1877F2' },
-  { key: 'linkedin', label: 'LinkedIn', short: 'LinkedIn', Icon: FaLinkedinIn, color: '#0A66C2' },
-  { key: 'twitter', label: 'X (Twitter)', short: 'X', Icon: FaXTwitter, color: '#18181B' },
-  { key: 'tiktok', label: 'TikTok', short: 'TikTok', Icon: FaTiktok, color: '#111111' },
-  { key: 'youtube', label: 'YouTube', short: 'YouTube', Icon: FaYoutube, color: '#FF0000' },
-  { key: 'whatsapp', label: 'WhatsApp', short: 'WhatsApp', Icon: FaWhatsapp, color: '#25D366' },
-  { key: 'snapchat', label: 'Snapchat', short: 'Snap', Icon: FaSnapchat, color: '#F5C400' },
-  { key: 'pinterest', label: 'Pinterest', short: 'Pin', Icon: FaPinterest, color: '#E60023' },
-  { key: 'threads', label: 'Threads', short: 'Threads', Icon: FaThreads, color: '#18181B' },
-  { key: 'email', label: 'Email', short: 'Email', Icon: FaEnvelope, color: '#4F46E5' },
-  { key: 'custom', label: 'Custom', short: 'Custom', Icon: FaLink, color: '#6B6780' },
+export { PLATFORMS, PLATFORM_MAP, getPlatform };
+export { PLATFORM_KEYS } from '../config/platforms.js';
+
+// The original twelve, kept as a named export for the regression checks.
+export const ORIGINAL_PLATFORM_KEYS = [
+  'instagram', 'facebook', 'linkedin', 'twitter', 'tiktok', 'youtube',
+  'whatsapp', 'snapchat', 'pinterest', 'threads', 'email', 'custom',
 ];
 
-export const PLATFORM_MAP = Object.fromEntries(PLATFORMS.map((p) => [p.key, p]));
-
-export const getPlatform = (key) => PLATFORM_MAP[key] || PLATFORM_MAP.custom;
 
 /**
  * Theme catalogue. `sample` drives the live thumbnail mockups so each preview

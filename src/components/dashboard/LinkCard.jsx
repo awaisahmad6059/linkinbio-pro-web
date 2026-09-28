@@ -4,8 +4,9 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FiEdit2, FiMousePointer, FiTrash2 } from 'react-icons/fi';
 import Switch from '../common/Switch.jsx';
-import { getPlatform } from '../../lib/constants.js';
+import LinkIcon from '../common/LinkIcon.jsx';
 import { cn } from '../../lib/utils.js';
+import { displayAddress } from '../../lib/linkUrl.js';
 
 /**
  * One row in the dashboard link list.
@@ -16,7 +17,6 @@ import { cn } from '../../lib/utils.js';
  */
 const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link._id });
-  const platform = getPlatform(link.platform);
 
   return (
     <div
@@ -40,13 +40,11 @@ const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy
         </svg>
       </button>
 
-      <span className="link-icon-badge" style={{ background: platform.color }}>
-        <platform.Icon />
-      </span>
+      <LinkIcon link={link} className="link-icon-badge" size={36} tone="solid" />
 
       <div className="link-card-body">
         <span className="link-card-title">{link.label}</span>
-        <span className="link-card-url">{link.url}</span>
+        <span className="link-card-url">{displayAddress(link)}</span>
       </div>
 
       <span className="link-stat" title={`${link.clickCount} clicks`}>
@@ -80,7 +78,6 @@ export default LinkCard;
 
 /* Sortable card used for the floating drag preview. */
 export const LinkCardOverlay = ({ link }) => {
-  const platform = getPlatform(link.platform);
   return (
     <motion.div
       className="link-card is-overlay"
@@ -96,12 +93,10 @@ export const LinkCardOverlay = ({ link }) => {
           )}
         </svg>
       </span>
-      <span className="link-icon-badge" style={{ background: platform.color }}>
-        <platform.Icon />
-      </span>
+      <LinkIcon link={link} className="link-icon-badge" size={36} tone="solid" />
       <div className="link-card-body">
         <span className="link-card-title">{link.label}</span>
-        <span className="link-card-url">{link.url}</span>
+        <span className="link-card-url">{displayAddress(link)}</span>
       </div>
     </motion.div>
   );
