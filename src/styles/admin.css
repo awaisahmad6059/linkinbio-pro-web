@@ -1,0 +1,287 @@
+/* ==================================================================== *
+ *  Admin area — shell, tables, ranking, search
+ *
+ *  Built from the tokens already in global.css, so the admin screens inherit
+ *  the product's light/dark surface treatment without a second palette.
+ * ==================================================================== */
+
+.admin-shell .admin-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--brand-700);
+  background: var(--brand-50);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.admin-shell .admin-banner svg {
+  flex: none;
+}
+
+/* ------------------------------------------------------------- search box */
+
+.admin-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 280px;
+  max-width: 100%;
+}
+
+.admin-search > svg {
+  position: absolute;
+  left: 12px;
+  color: var(--ink-400);
+  pointer-events: none;
+}
+
+.admin-search input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px 0 38px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-900);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-search input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-50);
+}
+
+/* ----------------------------------------------------------------- tables */
+
+.admin-table-card {
+  border-radius: var(--r-lg, 14px);
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th {
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-500);
+  text-align: left;
+  white-space: nowrap;
+  background: var(--surface-2, var(--line-soft));
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: var(--surface-2, var(--line-soft));
+}
+
+.admin-table .num,
+.admin-table .ta-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Long emails and destinations get truncated rather than stretching the table;
+   the full value stays available as a title attribute. */
+.admin-table .truncate {
+  max-width: 240px;
+}
+
+.admin-shell .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------------- insights */
+
+.admin-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px;
+}
+
+.admin-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.admin-rank-row {
+  display: grid;
+  grid-template-columns: 26px 32px minmax(90px, 1.1fr) minmax(60px, 1.4fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.admin-rank-row:hover {
+  background: var(--surface-2, var(--line-soft));
+}
+
+.admin-rank-no {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--ink-400);
+}
+
+.admin-rank-no.is-top {
+  color: var(--brand);
+}
+
+.admin-rank-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-rank-bar {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  background: var(--line-soft);
+  border-radius: 999px;
+}
+
+.admin-rank-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand) 0%, #a855f7 100%);
+  border-radius: 999px;
+}
+
+.admin-rank-value {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-700, var(--ink-600));
+}
+
+/* Every supported platform, as a compact chip cloud. Unused keys stay visible
+   in a muted state so the full 69 are auditable at a glance. */
+.admin-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-500);
+  background: var(--surface-2, var(--line-soft));
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.admin-chip.is-used {
+  color: var(--brand-700);
+  background: var(--brand-50);
+  border-color: var(--brand-100, var(--brand-50));
+}
+
+.admin-chip b {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------ admin login */
+
+.admin-login-note {
+  display: flex;
+  gap: 9px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-600, var(--ink-500));
+  background: var(--surface-2, var(--line-soft));
+  border-radius: 10px;
+}
+
+.admin-login-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--brand);
+}
+
+.admin-profile {
+  border-radius: var(--r-lg, 14px);
+}
+
+/* ------------------------------------------------------------- responsive */
+
+@media (max-width: 720px) {
+  .admin-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 10px 12px;
+  }
+
+  .admin-rank-row {
+    grid-template-columns: 22px 28px minmax(70px, 1fr) auto;
+  }
+
+  /* The bar is the first thing to go on a narrow screen; the number carries
+     the same information. */
+  .admin-rank-bar {
+    display: none;
+  }
+}

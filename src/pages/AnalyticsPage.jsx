@@ -18,10 +18,9 @@ import AppShell from '../components/layout/AppShell.jsx';
 import AnimatedCounter from '../components/common/AnimatedCounter.jsx';
 import { StatCardSkeleton } from '../components/common/Skeleton.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
-import LinkIcon from '../components/common/LinkIcon.jsx';
+import BarRow from '../components/admin/BarRow.jsx';
 import { analyticsApi, parseApiError } from '../lib/api.js';
 import { useAuthStore } from '../store/authStore.js';
-import { getPlatform } from '../lib/constants.js';
 import { formatDayLabel, formatNumber, formatRelative } from '../lib/utils.js';
 
 const RANGES = [7, 30];
@@ -31,37 +30,6 @@ const tooltipStyle = {
   border: '1px solid #e7e5f0',
   boxShadow: '0 10px 30px rgba(30,27,46,.12)',
   fontSize: 12,
-};
-
-/** Small animated bar used in the per-link breakdown list. */
-const BarRow = ({ label, value, max, platform, delay, link }) => {
-  const pct = max > 0 ? Math.max((value / max) * 100, value > 0 ? 4 : 0) : 0;
-  const meta = getPlatform(platform);
-
-  return (
-    <div className="bar-row">
-      <div className="bar-row-name">
-        <LinkIcon
-          link={link || { platform, url: '' }}
-          size={22}
-          tone="brand"
-          faviconFallback={false}
-          className="bar-row-icon"
-        />
-        <span className="truncate">{label}</span>
-      </div>
-      <div className="bar-row-track">
-        <motion.div
-          className="bar-row-fill"
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, delay, ease: [0.22, 1, 0.36, 1] }}
-          style={{ background: `linear-gradient(90deg, ${meta.color} 0%, #a855f7 100%)` }}
-        />
-      </div>
-      <div className="bar-row-value">{formatNumber(value)}</div>
-    </div>
-  );
 };
 
 const AnalyticsPage = () => {

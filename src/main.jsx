@@ -16,6 +16,7 @@ import './styles/themes.css';
 import './styles/landing.css';
 import './styles/dashboard.css';
 import './styles/picker.css';
+import './styles/admin.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

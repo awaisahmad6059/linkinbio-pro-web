@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { FiAtSign, FiLock, FiMail, FiTrash2 } from 'react-icons/fi';
 import PageTransition from '../components/common/PageTransition.jsx';
 import AppShell from '../components/layout/AppShell.jsx';
@@ -29,6 +29,7 @@ const SettingsPage = () => {
   const [usernameErrors, setUsernameErrors] = useState({});
 
   const [email, setEmail] = useState(user?.email || '');
+  const [emailPassword, setEmailPassword] = useState('');
   const [emailErrors, setEmailErrors] = useState({});
   const [savingEmail, setSavingEmail] = useState(false);
 
@@ -60,21 +61,34 @@ const SettingsPage = () => {
     }
   };
 
+  const emailChanged = email.trim().toLowerCase() !== (user?.email || '').toLowerCase();
+
   const saveEmail = async (e) => {
     e.preventDefault();
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setEmailErrors({ email: 'Enter a valid email address' });
-      return;
+    const next = {};
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      next.email = 'Enter a valid email address';
+    } else if (emailChanged && !emailPassword) {
+      // Checked here so the field is explained before a round trip, though the
+      // server enforces it too.
+      next.currentPassword = 'Enter your password to confirm this change';
     }
+    setEmailErrors(next);
+    if (Object.keys(next).length) return;
+
     setSavingEmail(true);
     try {
-      const updated = await authApi.changeEmail(email.trim());
-      setUser(updated);
+    const updated = await authApi.changeEmail(email.trim(), emailPassword);
+    setUser(updated);
+    setEmail(updated.email);
+    setEmailPassword('');
       setEmailErrors({});
       success('Login email updated');
     } catch (err) {
       const { message, fieldErrors } = parseApiError(err);
       setEmailErrors(fieldErrors);
+      // A wrong password should not force the user to retype the address.
+      if (fieldErrors.currentPassword) setEmailPassword('');
       error(message);
     } finally {
       setSavingEmail(false);
@@ -193,7 +207,44 @@ const SettingsPage = () => {
                     <FiMail />
                   </span>
                 </Field>
-                <Button type="submit" loading={savingEmail} disabled={email === user?.email}>
+
+                {/* Only asked for once the address actually changes, so the form
+                    is not asking for a password to do nothing. */}
+                <AnimatePresence initial={false}>
+                  {emailChanged && (
+                    <motion.div
+                      key="confirm-email"
+                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginTop: 4 }}
+                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                      transition={{ duration: 0.22 }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <Field
+                        type="password"
+                        label="Confirm with your password"
+                        placeholder="••••••••"
+                        value={emailPassword}
+                        onChange={(e) => {
+                          setEmailPassword(e.target.value);
+                          setEmailErrors((prev) => ({ ...prev, currentPassword: undefined }));
+                        }}
+                        error={emailErrors.currentPassword}
+                        autoComplete="current-password"
+                      >
+                        <span className="input-icon">
+                          <FiLock />
+                        </span>
+                      </Field>
+                      <p className="settings-desc" style={{ marginTop: 6 }}>
+                        The server checks this before the address changes, so a stolen session
+                        cannot redirect your sign-in to someone else.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <Button type="submit" loading={savingEmail} disabled={!emailChanged}>
                   Save email
                 </Button>
               </div>

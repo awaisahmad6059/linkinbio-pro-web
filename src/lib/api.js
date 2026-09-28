@@ -62,7 +62,13 @@ export const authApi = {
     api.get(`/auth/username/${encodeURIComponent(username)}`).then((r) => r.data.data),
   me: () => api.get('/user/me').then((r) => r.data.data),
   updateProfile: (payload) => api.put('/user/me', payload).then((r) => r.data.data.user),
-  changeEmail: (email) => api.put('/user/email', { email }).then((r) => r.data.data.user),
+  /**
+   * Changing the login email re-checks the account password on the server. The
+   * token alone is not enough, so an email can never be redirected by a hijacked
+   * session or a walk-away-from-unlocked-browser.
+   */
+  changeEmail: (email, currentPassword) =>
+    api.put('/user/email', { email, currentPassword }).then((r) => r.data.data.user),
   changePassword: (payload) => api.put('/user/password', payload).then((r) => r.data.data),
   publish: () => api.post('/user/publish').then((r) => r.data.data),
   deleteAccount: () => api.delete('/user/me').then((r) => r.data),
@@ -90,4 +96,25 @@ export const publicApi = {
 
 export const analyticsApi = {
   summary: (range = 7) => api.get(`/analytics/summary?range=${range}`).then((r) => r.data.data),
+};
+
+/* ----------------------------------------------------------------- admin */
+
+/**
+ * Read-only admin endpoints.
+ *
+ * Nothing in this file can modify anything — the server exposes no admin
+ * mutation routes, so there is deliberately no create/update/delete method to
+ * reach for. The 403 the server returns for a non-admin is surfaced by
+ * `parseApiError` like any other failure.
+ */
+export const adminApi = {
+  overview: (range = 7) => api.get(`/admin/overview?range=${range}`).then((r) => r.data.data),
+  users: ({ q = '', page = 1, limit = 25 } = {}) =>
+    api
+      .get('/admin/users', { params: { q: q || undefined, page, limit } })
+      .then((r) => r.data.data),
+  user: (id) => api.get(`/admin/users/${id}`).then((r) => r.data.data),
+  top: (limit = 10) => api.get(`/admin/top?limit=${limit}`).then((r) => r.data.data),
+  platforms: () => api.get('/admin/platforms').then((r) => r.data.data),
 };

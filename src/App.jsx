@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 
@@ -14,6 +14,15 @@ import AnalyticsPage from './pages/AnalyticsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import PublicProfilePage from './pages/PublicProfilePage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
+
+// The admin area is a small slice of the app that most visitors never open, so
+// it is split out of the main bundle. Its charts and the recharts dependency
+// only download if an administrator actually goes there.
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage.jsx'));
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage.jsx'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.jsx'));
+const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage.jsx'));
+const AdminInsightsPage = lazy(() => import('./pages/admin/AdminInsightsPage.jsx'));
 
 /**
  * Routes a signed-out visitor is allowed to settle on. The post-logout effect
@@ -45,6 +54,41 @@ const GuestRoute = ({ children }) => {
   const { user, authChecked, justSignedIn } = useAuthStore();
   if (!authChecked) return <RouteFallback />;
   if (user && !justSignedIn) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
+/**
+ * The admin area's own guard.
+ *
+ * This is a convenience redirect, not the security boundary. The role here comes
+ * from the cached session so a normal user is not shown a broken dashboard, but
+ * every admin endpoint re-reads the role from the database before returning
+ * anything, so a stale or hand-edited token in localStorage grants nothing.
+ */
+const AdminRoute = ({ children }) => {
+  const { user, authChecked, loggingOut } = useAuthStore();
+  const location = useLocation();
+
+  if (!authChecked || loggingOut) return <RouteFallback />;
+
+  if (!user) {
+    return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
+  }
+
+  // Signed in, but not an administrator: send them somewhere they can act on
+  // rather than showing an empty admin shell or a wall of 403s.
+  if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+
+  return children;
+};
+
+/** Keeps signed-in admins off the admin sign-in screen. */
+const AdminGuestRoute = ({ children }) => {
+  const { user, authChecked, justSignedIn } = useAuthStore();
+  if (!authChecked) return <RouteFallback />;
+  if (user && !justSignedIn) {
+    return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
+  }
   return children;
 };
 
@@ -110,6 +154,60 @@ const App = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
           <Route path="/signup" element={<GuestRoute><SignupPage /></GuestRoute>} />
+
+          {/* Admin first: every /admin path has to be matched before the public
+              /:username route, which would otherwise swallow "admin" and render
+              a 404 profile page. */}
+          <Route
+            path="/admin/login"
+            element={
+              <AdminGuestRoute>
+                <Suspense fallback={<RouteFallback />}>
+                  <AdminLoginPage />
+                </Suspense>
+              </AdminGuestRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <Suspense fallback={<RouteFallback />}>
+                  <AdminOverviewPage />
+                </Suspense>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <Suspense fallback={<RouteFallback />}>
+                  <AdminUsersPage />
+                </Suspense>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users/:id"
+            element={
+              <AdminRoute>
+                <Suspense fallback={<RouteFallback />}>
+                  <AdminUserDetailPage />
+                </Suspense>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/insights"
+            element={
+              <AdminRoute>
+                <Suspense fallback={<RouteFallback />}>
+                  <AdminInsightsPage />
+                </Suspense>
+              </AdminRoute>
+            }
+          />
 
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/dashboard/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
