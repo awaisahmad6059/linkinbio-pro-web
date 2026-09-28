@@ -36,24 +36,44 @@ const LinkForm = ({ initial, submitting, onSubmit, onClose }) => {
   // The hostname as it stood when the user last chose a tile by hand.
   const manualHost = useRef(null);
   const lastDetected = useRef(null);
+  // The title the form suggested for itself, so a later tile change can keep
+  // following the platform. A title the user typed is left alone.
+  const autoLabel = useRef(null);
+  // Mirrors form.label so the platform handler can read it without taking a
+  // dependency on the whole form object.
+  const labelRef = useRef(initial?.label || '');
 
   useEffect(() => {
     setForm(blankForm(initial));
     setErrors({});
     manualHost.current = null;
     lastDetected.current = null;
+    // A link opened for editing already carries a title its author wrote, so
+    // it counts as manual from the start.
+    autoLabel.current = null;
+    labelRef.current = initial?.label || '';
   }, [initial]);
 
   const update = (key) => (e) => {
+    if (key === 'label') labelRef.current = e.target.value;
     setForm((f) => ({ ...f, [key]: e.target.value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
   const applyPlatform = useCallback((key) => {
+    // Keep the title in step with the tile, but only while the title is still
+    // the one we suggested — or empty. Once the user types their own, that
+    // title is theirs and no tile click may overwrite it.
+    const current = labelRef.current.trim();
+    if (!current || current === autoLabel.current) {
+      const suggested = getPlatform(key).label;
+      autoLabel.current = suggested;
+      labelRef.current = suggested;
+    }
+
     setForm((f) => {
       const patch = { platform: key };
-      // Suggest a title once, and only while the field is still empty.
-      if (!f.label.trim()) patch.label = getPlatform(key).label;
+      if (labelRef.current !== f.label) patch.label = labelRef.current;
       if (key !== 'custom') {
         // Icon customisations belong to the custom tile.
         patch.iconType = 'auto';
