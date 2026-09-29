@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiExternalLink, FiSearch, FiUser, FiUsers } from 'react-icons/fi';
+import { FiCheckCircle, FiExternalLink, FiSearch, FiUser, FiUserX, FiUsers } from 'react-icons/fi';
 import PageTransition from '../../components/common/PageTransition.jsx';
 import AdminShell from '../../components/admin/AdminShell.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
@@ -147,8 +147,22 @@ const AdminUsersPage = () => {
                                     admin
                                   </span>
                                 )}
+                                {u.status === 'suspended' && (
+                                  <span className="badge badge-warn" style={{ marginLeft: 8 }}>
+                                    <FiUserX /> suspended
+                                  </span>
+                                )}
                               </div>
-                              <div className="tiny muted truncate">{u.email}</div>
+                              <div className="tiny muted truncate">
+                                {u.email}
+                                <span
+                                  className={u.emailVerified ? 'badge badge-success' : 'badge badge-neutral'}
+                                  style={{ marginLeft: 8, height: 18 }}
+                                >
+                                  {u.emailVerified ? <FiCheckCircle /> : null}
+                                  {u.emailVerified ? 'verified' : 'unverified'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </td>

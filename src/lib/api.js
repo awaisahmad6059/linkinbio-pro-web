@@ -101,12 +101,11 @@ export const analyticsApi = {
 /* ----------------------------------------------------------------- admin */
 
 /**
- * Read-only admin endpoints.
+ * Admin surface.
  *
- * Nothing in this file can modify anything — the server exposes no admin
- * mutation routes, so there is deliberately no create/update/delete method to
- * reach for. The 403 the server returns for a non-admin is surfaced by
- * `parseApiError` like any other failure.
+ * The GET helpers are read-only platform views. The mutation helpers drive the
+ * per-user account actions (suspend, reset password, verified flag, delete) and
+ * are only reachable by an account whose role is actually `admin` on the server.
  */
 export const adminApi = {
   overview: (range = 7) => api.get(`/admin/overview?range=${range}`).then((r) => r.data.data),
@@ -117,4 +116,9 @@ export const adminApi = {
   user: (id) => api.get(`/admin/users/${id}`).then((r) => r.data.data),
   top: (limit = 10) => api.get(`/admin/top?limit=${limit}`).then((r) => r.data.data),
   platforms: () => api.get('/admin/platforms').then((r) => r.data.data),
+  setStatus: (id, status) => api.patch(`/admin/users/${id}/status`, { status }).then((r) => r.data.data.user),
+  resetPassword: (id, password) => api.put(`/admin/users/${id}/password`, { password }).then((r) => r.data.data),
+  setEmailVerified: (id, emailVerified) =>
+    api.patch(`/admin/users/${id}/email-verified`, { emailVerified }).then((r) => r.data.data.user),
+  removeUser: (id) => api.delete(`/admin/users/${id}`).then((r) => r.data),
 };

@@ -13,10 +13,17 @@ import {
 import {
   FiArrowLeft,
   FiCalendar,
+  FiCheckCircle,
   FiEye,
   FiExternalLink,
+  FiKey,
   FiLink2,
+  FiMail,
   FiMousePointer,
+  FiTrash2,
+  FiUserCheck,
+  FiUserX,
+  FiXCircle,
 } from 'react-icons/fi';
 import PageTransition from '../../components/common/PageTransition.jsx';
 import AdminShell from '../../components/admin/AdminShell.jsx';
@@ -25,9 +32,13 @@ import BarRow from '../../components/admin/BarRow.jsx';
 import Skeleton, { StatCardSkeleton } from '../../components/common/Skeleton.jsx';
 import LinkIcon from '../../components/common/LinkIcon.jsx';
 import Avatar from '../../components/common/Avatar.jsx';
+import Button from '../../components/common/Button.jsx';
+import Modal from '../../components/common/Modal.jsx';
+import ConfirmDialog from '../../components/common/ConfirmDialog.jsx';
 import { adminApi, parseApiError } from '../../lib/api.js';
 import { formatDayLabel, formatNumber, formatRelative, publicOrigin } from '../../lib/utils.js';
 import { getPlatform } from '../../config/platforms.js';
+import { useToastStore } from '../../store/toastStore.js';
 import { AdminErrorNote } from './AdminOverviewPage.jsx';
 
 const VIEWS = '#4f46e5';
@@ -50,6 +61,12 @@ const AdminUserDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(''); // 'status' | 'verified' | 'password' | 'delete'
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetValue, setResetValue] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const toastSuccess = useToastStore((s) => s.success);
+  const toastError = useToastStore((s) => s.error);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +96,55 @@ const AdminUserDetailPage = () => {
   const analytics = data?.analytics;
   const series = (analytics?.series || []).map((d) => ({ ...d, label: formatDayLabel(d.date) }));
   const maxClicks = links.reduce((m, l) => Math.max(m, l.clickCount || 0), 0);
+
+  /** Replaces the user record with the server's copy after a mutation. */
+  const applyUserUpdate = (updated) =>
+    setData((prev) => (prev ? { ...prev, user: updated } : prev));
+
+  /**
+   * Runs an action with a standard busy + error path. The busy name doubles as
+   * the button id, so only the button being pressed shows its spinner.
+   */
+  const runAction = async (name, fn) => {
+    setBusy(name);
+    try {
+      await fn();
+    } catch (err) {
+      toastError(parseApiError(err).message);
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const toggleStatus = () =>
+    runAction('status', async () => {
+      const next = user.status === 'suspended' ? 'active' : 'suspended';
+      const updated = await adminApi.setStatus(user.id, next);
+      applyUserUpdate(updated);
+      toastSuccess(updated.status === 'suspended' ? 'Account suspended' : 'Account re-activated');
+    });
+
+  const toggleVerified = () =>
+    runAction('verified', async () => {
+      const updated = await adminApi.setEmailVerified(user.id, !user.emailVerified);
+      applyUserUpdate(updated);
+      toastSuccess(updated.emailVerified ? 'Email marked as verified' : 'Email marked as unverified');
+    });
+
+  const submitReset = () =>
+    runAction('password', async () => {
+      await adminApi.resetPassword(user.id, resetValue);
+      setResetOpen(false);
+      setResetValue('');
+      toastSuccess('Password reset — the old one no longer works');
+    });
+
+  const submitDelete = () =>
+    runAction('delete', async () => {
+      await adminApi.removeUser(user.id);
+      toastSuccess(`@${user.username} was deleted`);
+      navigate('/admin/users');
+    });
 
   const stats = [
     { Icon: FiEye, label: 'Page views', value: analytics?.views ?? 0, hint: 'All-time visitors' },
@@ -131,6 +197,20 @@ const AdminUserDetailPage = () => {
                       </h1>
                       {user?.role === 'admin' && <span className="badge badge-brand">admin</span>}
                       {user?.publishedAt && <span className="badge badge-success">published</span>}
+                      {user?.status === 'suspended' && (
+                        <span className="badge badge-warn">
+                          <FiUserX /> suspended
+                        </span>
+                      )}
+                      {user?.emailVerified ? (
+                        <span className="badge badge-success">
+                          <FiCheckCircle /> verified
+                        </span>
+                      ) : (
+                        <span className="badge badge-neutral" title="This email has not been verified">
+                          <FiXCircle /> unverified
+                        </span>
+                      )}
                     </div>
                     <div className="small muted truncate" style={{ marginTop: 2 }}>
                       {user?.email} · /{user?.username}
@@ -153,6 +233,59 @@ const AdminUserDetailPage = () => {
                     <FiExternalLink /> View public page
                   </a>
                 </div>
+              </div>
+
+              <div className="chart-card" style={{ marginBottom: 18 }}>
+                <div className="card-title" style={{ marginBottom: 4 }}>Account actions</div>
+                <p className="hint" style={{ marginBottom: 14 }}>
+                  Changes take effect immediately. A suspended account cannot log in or use any API
+                  until it is re-activated.
+                </p>
+
+                {user?.role === 'admin' ? (
+                  <p className="small muted" style={{ color: 'var(--ink-400)' }}>
+                    Administrator accounts are protected — they cannot be changed from this panel.
+                  </p>
+                ) : (
+                  <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="outline"
+                      icon={user?.status === 'suspended' ? FiUserCheck : FiUserX}
+                      loading={busy === 'status'}
+                      disabled={busy !== '' && busy !== 'status'}
+                      onClick={toggleStatus}
+                    >
+                      {user?.status === 'suspended' ? 'Un-suspend' : 'Suspend'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      icon={user?.emailVerified ? FiXCircle : FiMail}
+                      loading={busy === 'verified'}
+                      disabled={busy !== '' && busy !== 'verified'}
+                      onClick={toggleVerified}
+                    >
+                      {user?.emailVerified ? 'Mark unverified' : 'Mark verified'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      icon={FiKey}
+                      loading={busy === 'password'}
+                      disabled={busy !== '' && busy !== 'password'}
+                      onClick={() => setResetOpen(true)}
+                    >
+                      Reset password
+                    </Button>
+                    <Button
+                      variant="danger"
+                      icon={FiTrash2}
+                      loading={busy === 'delete'}
+                      disabled={busy !== '' && busy !== 'delete'}
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      Delete account
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div className="stat-grid">
@@ -314,6 +447,47 @@ const AdminUserDetailPage = () => {
               </div>
             </>
           )}
+
+          <Modal open={resetOpen} onClose={() => setResetOpen(false)} maxWidth={430} labelledBy="reset-password-title">
+            <h3 className="card-title" id="reset-password-title" style={{ fontSize: 18, marginBottom: 6 }}>
+              Reset password
+            </h3>
+            <p className="confirm-text">
+              Set a new password for <strong>{user?.email}</strong>. The previous password stops
+              working as soon as this saves.
+            </p>
+            <label className="small strong" style={{ display: 'block', margin: '12px 0 6px' }} htmlFor="admin-reset-password">
+              New password
+            </label>
+            <input
+              id="admin-reset-password"
+              className="input"
+              type="password"
+              autoFocus
+              value={resetValue}
+              onChange={(e) => setResetValue(e.target.value)}
+              placeholder="At least 8 characters"
+            />
+            <div className="modal-actions">
+              <Button variant="ghost" onClick={() => setResetOpen(false)} disabled={busy === 'password'}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={submitReset} loading={busy === 'password'} disabled={resetValue.length < 8}>
+                Reset password
+              </Button>
+            </div>
+          </Modal>
+
+          <ConfirmDialog
+            open={deleteOpen}
+            title="Delete this account?"
+            message={`This permanently deletes @${user?.username}, all of their links and their analytics. This cannot be undone.`}
+            confirmLabel="Delete account"
+            loading={busy === 'delete'}
+            onConfirm={submitDelete}
+            onClose={() => setDeleteOpen(false)}
+            icon={<FiTrash2 />}
+          />
         </div>
       </PageTransition>
     </AdminShell>
