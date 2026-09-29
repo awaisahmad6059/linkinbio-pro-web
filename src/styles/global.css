@@ -730,6 +730,23 @@ ol {
 .badge-warn { background: var(--warn-50); color: #b45309; }
 .badge-neutral { background: var(--line-soft); color: var(--ink-500); }
 
+/* The verified mark: a blue tick in a blue disc, the way Instagram and WhatsApp
+   signal a confirmed account. Kept circular so it also reads next to a name. */
+.verified-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-full);
+  background: #1d7afc;
+  color: #fff;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.badge-verified { background: #e8f1fe; color: #1d7afc; }
+.badge-verified .verified-tick { width: 14px; height: 14px; font-size: 10px; }
+
 /* ----------------------------------------------------------- empty state -- */
 
 .empty {

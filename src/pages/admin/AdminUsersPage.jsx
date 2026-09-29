@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiCheckCircle, FiExternalLink, FiSearch, FiUser, FiUserX, FiUsers } from 'react-icons/fi';
+import { FiCheck, FiExternalLink, FiSearch, FiUser, FiUserX, FiUsers } from 'react-icons/fi';
 import PageTransition from '../../components/common/PageTransition.jsx';
 import AdminShell from '../../components/admin/AdminShell.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
@@ -155,13 +155,18 @@ const AdminUsersPage = () => {
                               </div>
                               <div className="row" style={{ gap: 6, minWidth: 0 }}>
                                 <span className="tiny muted truncate">{u.email}</span>
-                                <span
-                                  className={u.emailVerified ? 'badge badge-success' : 'badge badge-neutral'}
-                                  style={{ flexShrink: 0, height: 18 }}
-                                >
-                                  {u.emailVerified ? <FiCheckCircle /> : null}
-                                  {u.emailVerified ? 'verified' : 'unverified'}
-                                </span>
+                                {u.emailVerified ? (
+                                  <span className="badge badge-verified" style={{ flexShrink: 0, height: 18 }}>
+                                    <span className="verified-tick" style={{ width: 12, height: 12, fontSize: 9 }}>
+                                      <FiCheck />
+                                    </span>
+                                    verified
+                                  </span>
+                                ) : (
+                                  <span className="badge badge-neutral" style={{ flexShrink: 0, height: 18 }}>
+                                    unverified
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>

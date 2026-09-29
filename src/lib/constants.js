@@ -69,12 +69,12 @@ export const USERNAME_MAX = 24;
 
 /**
  * Help-request types, kept in sync with `REQUEST_TYPES` on the server. The
- * account-actions screen and the Request/email-verify flows both read this list.
+ * login screen and the dashboard verification card both read this list.
  */
 export const REQUEST_TYPES = ['verify-email', 'password-reset', 'account-suspend', 'other'];
 
 export const REQUEST_TYPE_LABELS = {
-  'verify-email': "I didn't get my verification code",
+  'verify-email': 'Please verify my email',
   'password-reset': 'I forgot my password',
   'account-suspend': 'My account was suspended',
   other: 'Something else',

@@ -72,11 +72,6 @@ export const authApi = {
   changePassword: (payload) => api.put('/user/password', payload).then((r) => r.data.data),
   publish: () => api.post('/user/publish').then((r) => r.data.data),
   deleteAccount: () => api.delete('/user/me').then((r) => r.data),
-  /**
-   * Redeems the one-time code mailed at signup. Unverified accounts remain fully
-   * usable (Option A); this only upgrades the badge.
-   */
-  verifyOtp: (code) => api.post('/auth/verify-otp', { code }).then((r) => r.data.data.user),
 };
 
 /* ----------------------------------------------------------------- links */
@@ -132,7 +127,6 @@ export const adminApi = {
       .get('/admin/requests', { params: { status, page, limit } })
       .then((r) => r.data.data),
   setRequestStatus: (id, status) => api.patch(`/admin/requests/${id}`, { status }).then((r) => r.data.data.request),
-  resendUserOtp: (id) => api.post(`/admin/users/${id}/otp-resend`).then((r) => r.data.data),
 };
 
 /* --------------------------------------------------------------- requests */

@@ -13,14 +13,12 @@ import {
 import {
   FiArrowLeft,
   FiCalendar,
-  FiCheckCircle,
   FiEye,
   FiExternalLink,
   FiKey,
   FiLink2,
   FiMail,
   FiMousePointer,
-  FiRepeat,
   FiTrash2,
   FiUserCheck,
   FiUserX,
@@ -35,6 +33,7 @@ import LinkIcon from '../../components/common/LinkIcon.jsx';
 import Avatar from '../../components/common/Avatar.jsx';
 import Button from '../../components/common/Button.jsx';
 import Modal from '../../components/common/Modal.jsx';
+import VerifiedBadge from '../../components/common/VerifiedBadge.jsx';
 import ConfirmDialog from '../../components/common/ConfirmDialog.jsx';
 import { adminApi, parseApiError } from '../../lib/api.js';
 import { formatDayLabel, formatNumber, formatRelative, publicOrigin } from '../../lib/utils.js';
@@ -62,12 +61,10 @@ const AdminUserDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [busy, setBusy] = useState(''); // 'status' | 'verified' | 'password' | 'delete' | 'otp'
+  const [busy, setBusy] = useState(''); // 'status' | 'verified' | 'password' | 'delete'
   const [resetOpen, setResetOpen] = useState(false);
   const [resetValue, setResetValue] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpOpen, setOtpOpen] = useState(false);
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
 
@@ -149,19 +146,6 @@ const AdminUserDetailPage = () => {
       navigate('/admin/users');
     });
 
-  /**
-   * The only way a new code is issued. The server returns the code back to the
-   * admin caller because email delivery may not be configured yet — the admin
-   * relays it in person (the whole point of the request flow).
-   */
-  const resendOtp = () =>
-    runAction('otp', async () => {
-      const resp = await adminApi.resendUserOtp(user.id);
-      setOtpCode(resp.code);
-      setOtpOpen(true);
-      toastSuccess(resp.delivered ? 'A fresh code was emailed to the user' : 'A fresh code was issued — share the code shown');
-    });
-
   const stats = [
     { Icon: FiEye, label: 'Page views', value: analytics?.views ?? 0, hint: 'All-time visitors' },
     { Icon: FiMousePointer, label: 'Link clicks', value: analytics?.clicks ?? 0, hint: 'All-time taps' },
@@ -219,9 +203,7 @@ const AdminUserDetailPage = () => {
                         </span>
                       )}
                       {user?.emailVerified ? (
-                        <span className="badge badge-success">
-                          <FiCheckCircle /> verified
-                        </span>
+                        <VerifiedBadge label="verified" title="This account is verified" />
                       ) : (
                         <span className="badge badge-neutral" title="This email has not been verified">
                           <FiXCircle /> unverified
@@ -291,17 +273,6 @@ const AdminUserDetailPage = () => {
                     >
                       Reset password
                     </Button>
-                    {!user?.emailVerified && (
-                      <Button
-                        variant="outline"
-                        icon={FiRepeat}
-                        loading={busy === 'otp'}
-                        disabled={busy !== '' && busy !== 'otp'}
-                        onClick={resendOtp}
-                      >
-                        Resend verification code
-                      </Button>
-                    )}
                     <Button
                       variant="danger"
                       icon={FiTrash2}
@@ -502,38 +473,6 @@ const AdminUserDetailPage = () => {
               <Button variant="primary" onClick={submitReset} loading={busy === 'password'} disabled={resetValue.length < 8}>
                 Reset password
               </Button>
-            </div>
-          </Modal>
-
-          <Modal open={otpOpen} onClose={() => setOtpOpen(false)} maxWidth={400} labelledBy="otp-code-title">
-            <div className="modal-pad">
-              <h3 className="card-title" id="otp-code-title" style={{ fontSize: 18, marginBottom: 6 }}>
-                Fresh verification code
-              </h3>
-              <p className="confirm-text">
-                Share this code with <strong>{user?.email}</strong>. It is valid for
-                15 minutes — the user enters it on their dashboard to verify.
-              </p>
-              <div
-                className="small strong"
-                style={{
-                  fontSize: 26,
-                  letterSpacing: 8,
-                  textAlign: 'center',
-                  padding: '14px 0',
-                  background: 'var(--line-soft)',
-                  borderRadius: 12,
-                  margin: '14px 0 4px',
-                  userSelect: 'all',
-                }}
-              >
-                {otpCode}
-              </div>
-              <div className="modal-actions" style={{ marginTop: 8 }}>
-                <Button variant="primary" onClick={() => setOtpOpen(false)}>
-                  Done
-                </Button>
-              </div>
             </div>
           </Modal>
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheck, FiCheckCircle, FiEye, FiMail, FiZap } from 'react-icons/fi';
+import { FiCheck, FiEye, FiMail, FiZap } from 'react-icons/fi';
 import PageTransition from '../components/common/PageTransition.jsx';
+import VerifiedBadge from '../components/common/VerifiedBadge.jsx';
 import AppShell from '../components/layout/AppShell.jsx';
 import ProfileEditor from '../components/dashboard/ProfileEditor.jsx';
 import LinkManager from '../components/dashboard/LinkManager.jsx';
@@ -89,9 +90,7 @@ const DashboardPage = () => {
                   /{user?.username}
                 </span>
                 {user?.emailVerified ? (
-                  <span className="badge badge-success" title="Your email is verified">
-                    <FiCheckCircle /> verified
-                  </span>
+                  <VerifiedBadge title="Your account is verified" />
                 ) : (
                   <span className="badge badge-neutral" title="Your email has not been verified yet">
                     <FiMail /> unverified
