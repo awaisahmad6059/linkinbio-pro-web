@@ -27,6 +27,10 @@ const Field = forwardRef(function Field(
   const id = useId();
   const describedBy = error ? `${id}-err` : hint || counter ? `${id}-hint` : undefined;
   const Control = as;
+  // A select carries its choices as children, whereas an input's children are an
+  // affix (an icon sitting inside the control), so the two cannot be routed the
+  // same way.
+  const isSelect = as === 'select';
 
   return (
     <div className={cn('field', className)}>
@@ -40,7 +44,7 @@ const Field = forwardRef(function Field(
         </label>
       )}
 
-      <div className={cn('input-wrap', children && 'has-affix', error && 'input-wrap-error')}>
+      <div className={cn('input-wrap', children && !isSelect && 'has-affix', error && 'input-wrap-error')}>
         <Control
           ref={ref}
           id={id}
@@ -48,8 +52,10 @@ const Field = forwardRef(function Field(
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
           {...rest}
-        />
-        {children}
+        >
+          {isSelect ? children : null}
+        </Control>
+        {isSelect ? null : children}
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
