@@ -7,24 +7,31 @@ import Field from '../common/Field.jsx';
 import { requestsApi, parseApiError } from '../../lib/api.js';
 import { REQUEST_TYPE_LABELS } from '../../lib/constants.js';
 
-const REQUEST_TYPE_OPTIONS = Object.entries(REQUEST_TYPE_LABELS).map(([value, label]) => ({
-  value,
-  label,
-  Icon: {
-    'verify-email': FiMail,
-    'password-reset': FiShield,
-    'account-suspend': FiUserX,
-    other: FiAlertCircle,
-  }[value],
-}));
+/**
+ * A verification request is filed from the dashboard, where the account is
+ * already signed in, so it is deliberately absent here: this form is for
+ * people who cannot sign in at all, and offering it would only earn them a
+ * rejection.
+ */
+const REQUEST_TYPE_OPTIONS = Object.entries(REQUEST_TYPE_LABELS)
+  .filter(([value]) => value !== 'verify-email')
+  .map(([value, label]) => ({
+    value,
+    label,
+    Icon: {
+      'password-reset': FiShield,
+      'account-suspend': FiUserX,
+      other: FiAlertCircle,
+    }[value],
+  }));
 
 /**
  * The public "ask the admin for help" form.
  *
- * Shared by the login screen (forgot password / suspended) and the dashboard's
- * unverified banner (missing verification code). It posts to the same public
- * `/api/requests` endpoint, which answers identically whether or not an email
- * has an account — so this form can never be used to probe the user table.
+ * Used on the login screen by anyone who cannot get in: a forgotten password, a
+ * suspension, or something else. It posts to the same `/api/requests` endpoint
+ * that answers identically whether or not an email has an account — so this form
+ * can never be used to probe the user table.
  */
 const HelpRequestModal = ({ open, onClose, email: initialEmail = '', defaultType = 'other' }) => {
   const [form, setForm] = useState({ email: initialEmail, type: defaultType, message: '' });
