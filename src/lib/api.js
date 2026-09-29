@@ -72,6 +72,11 @@ export const authApi = {
   changePassword: (payload) => api.put('/user/password', payload).then((r) => r.data.data),
   publish: () => api.post('/user/publish').then((r) => r.data.data),
   deleteAccount: () => api.delete('/user/me').then((r) => r.data),
+  /**
+   * Redeems the one-time code mailed at signup. Unverified accounts remain fully
+   * usable (Option A); this only upgrades the badge.
+   */
+  verifyOtp: (code) => api.post('/auth/verify-otp', { code }).then((r) => r.data.data.user),
 };
 
 /* ----------------------------------------------------------------- links */
@@ -104,8 +109,9 @@ export const analyticsApi = {
  * Admin surface.
  *
  * The GET helpers are read-only platform views. The mutation helpers drive the
- * per-user account actions (suspend, reset password, verified flag, delete) and
- * are only reachable by an account whose role is actually `admin` on the server.
+ * per-user account actions (suspend, reset password, verified flag, delete,
+ * verification-code resend, request handling) and are only reachable by an
+ * account whose role is actually `admin` on the server.
  */
 export const adminApi = {
   overview: (range = 7) => api.get(`/admin/overview?range=${range}`).then((r) => r.data.data),
@@ -121,4 +127,21 @@ export const adminApi = {
   setEmailVerified: (id, emailVerified) =>
     api.patch(`/admin/users/${id}/email-verified`, { emailVerified }).then((r) => r.data.data.user),
   removeUser: (id) => api.delete(`/admin/users/${id}`).then((r) => r.data),
+  requests: ({ status = 'open', page = 1, limit = 25 } = {}) =>
+    api
+      .get('/admin/requests', { params: { status, page, limit } })
+      .then((r) => r.data.data),
+  setRequestStatus: (id, status) => api.patch(`/admin/requests/${id}`, { status }).then((r) => r.data.data.request),
+  resendUserOtp: (id) => api.post(`/admin/users/${id}/otp-resend`).then((r) => r.data.data),
+};
+
+/* --------------------------------------------------------------- requests */
+
+/**
+ * The user->admin help desk. Anyone can raise a request: an email that does not
+ * match a known account gets the same polite answer as a real one, so the API
+ * never reveals whether an account exists.
+ */
+export const requestsApi = {
+  create: (payload) => api.post('/requests', payload).then((r) => r.data),
 };

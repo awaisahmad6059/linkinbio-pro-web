@@ -22,6 +22,7 @@ const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage.jsx'));
 const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage.jsx'));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.jsx'));
 const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage.jsx'));
+const AdminRequestsPage = lazy(() => import('./pages/admin/AdminRequestsPage.jsx'));
 const AdminInsightsPage = lazy(() => import('./pages/admin/AdminInsightsPage.jsx'));
 
 /**
@@ -194,6 +195,16 @@ const App = () => {
               <AdminRoute>
                 <Suspense fallback={<RouteFallback />}>
                   <AdminUserDetailPage />
+                </Suspense>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/requests"
+            element={
+              <AdminRoute>
+                <Suspense fallback={<RouteFallback />}>
+                  <AdminRequestsPage />
                 </Suspense>
               </AdminRoute>
             }

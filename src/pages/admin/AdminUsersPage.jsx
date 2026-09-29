@@ -66,8 +66,8 @@ const AdminUsersPage = () => {
             <div>
               <h1 className="page-title">Users</h1>
               <p className="page-sub">
-                Search by email or username. Open an account to see its page, links and
-                analytics — read-only.
+                Search by email or username. Open an account to see its page, links,
+                analytics and account actions.
               </p>
             </div>
 
@@ -153,11 +153,11 @@ const AdminUsersPage = () => {
                                   </span>
                                 )}
                               </div>
-                              <div className="tiny muted truncate">
-                                {u.email}
+                              <div className="row" style={{ gap: 6, minWidth: 0 }}>
+                                <span className="tiny muted truncate">{u.email}</span>
                                 <span
                                   className={u.emailVerified ? 'badge badge-success' : 'badge badge-neutral'}
-                                  style={{ marginLeft: 8, height: 18 }}
+                                  style={{ flexShrink: 0, height: 18 }}
                                 >
                                   {u.emailVerified ? <FiCheckCircle /> : null}
                                   {u.emailVerified ? 'verified' : 'unverified'}

@@ -6,6 +6,7 @@ import {
   FiBarChart2,
   FiExternalLink,
   FiGrid,
+  FiInbox,
   FiLogOut,
   FiSettings,
   FiUsers,
@@ -19,16 +20,17 @@ import { publicOrigin } from '../../lib/utils.js';
 const NAV = [
   { to: '/admin', label: 'Overview', Icon: FiGrid, end: true },
   { to: '/admin/users', label: 'Users', Icon: FiUsers, end: false },
+  { to: '/admin/requests', label: 'Requests', Icon: FiInbox, end: false },
   { to: '/admin/insights', label: 'Insights', Icon: FiBarChart2, end: false },
 ];
 
 /**
- * Layout for the read-only admin area.
+ * Layout for the admin area.
  *
  * Mirrors AppShell so the admin screens are recognisably the same product, with
- * a different set of sections. The only functional difference is that there is
- * no "share my page" pill or link-editing affordance anywhere in here: nothing
- * an admin sees can be written back.
+ * a different set of sections. The admin area is no longer read-only: account
+ * actions (suspend, reset password, verified flag, delete), verification-code
+ * resends and the user help-request queue are all driven from here.
  */
 const AdminShell = ({ children }) => {
   const navigate = useNavigate();
@@ -70,7 +72,7 @@ const AdminShell = ({ children }) => {
     <div className="app-shell admin-shell">
       <div className="admin-banner" role="note">
         <FiActivity />
-        <span>Admin area — read-only. Nothing here can change an account.</span>
+        <span>Admin area — live controls. Changes take effect immediately.</span>
       </div>
 
       <div className="app-top">

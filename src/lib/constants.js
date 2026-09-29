@@ -66,3 +66,21 @@ export const getTheme = (key) => THEME_MAP[key] || THEME_MAP.gradient;
 export const BIO_MAX = 160;
 export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 24;
+
+/**
+ * Help-request types, kept in sync with `REQUEST_TYPES` on the server. The
+ * account-actions screen and the Request/email-verify flows both read this list.
+ */
+export const REQUEST_TYPES = ['verify-email', 'password-reset', 'account-suspend', 'other'];
+
+export const REQUEST_TYPE_LABELS = {
+  'verify-email': "I didn't get my verification code",
+  'password-reset': 'I forgot my password',
+  'account-suspend': 'My account was suspended',
+  other: 'Something else',
+};
+
+export const REQUEST_STATUS_LABELS = {
+  open: 'Open',
+  resolved: 'Resolved',
+};

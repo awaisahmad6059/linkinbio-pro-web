@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiAlertCircle, FiLock, FiMail } from 'react-icons/fi';
+import { FiAlertCircle, FiHelpCircle, FiLock, FiMail } from 'react-icons/fi';
 import PageTransition from '../common/PageTransition.jsx';
 import AuthShell from '../layout/AuthShell.jsx';
 import Field from '../common/Field.jsx';
 import Button from '../common/Button.jsx';
 import SuccessCheck from '../common/SuccessCheck.jsx';
+import HelpRequestModal from './HelpRequestModal.jsx';
 import { useAuthStore } from '../../store/authStore.js';
 import { parseApiError } from '../../lib/api.js';
 
@@ -48,6 +49,7 @@ const LoginForm = ({
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [status, setStatus] = useState('idle'); // idle | submitting | success
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const update = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -163,6 +165,18 @@ const LoginForm = ({
               </Button>
             </motion.div>
 
+            {variant === 'default' && (
+              <motion.div variants={item}>
+                <button
+                  type="button"
+                  className="auth-help-link"
+                  onClick={() => setHelpOpen(true)}
+                >
+                  <FiHelpCircle /> Trouble signing in?
+                </button>
+              </motion.div>
+            )}
+
             {footer && (
               <motion.p variants={item} className="auth-alt">
                 {footer}
@@ -170,6 +184,13 @@ const LoginForm = ({
             )}
           </motion.form>
         )}
+
+        <HelpRequestModal
+          open={helpOpen}
+          onClose={() => setHelpOpen(false)}
+          defaultType="password-reset"
+          email={form.email}
+        />
       </AuthShell>
     </PageTransition>
   );

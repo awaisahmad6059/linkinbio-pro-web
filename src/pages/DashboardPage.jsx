@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheck, FiEye, FiZap } from 'react-icons/fi';
+import { FiCheck, FiCheckCircle, FiEye, FiMail, FiZap } from 'react-icons/fi';
 import PageTransition from '../components/common/PageTransition.jsx';
 import AppShell from '../components/layout/AppShell.jsx';
 import ProfileEditor from '../components/dashboard/ProfileEditor.jsx';
@@ -10,6 +10,7 @@ import LivePreview from '../components/dashboard/LivePreview.jsx';
 import Button from '../components/common/Button.jsx';
 import ConfettiBurst from '../components/common/ConfettiBurst.jsx';
 import SuccessCheck from '../components/common/SuccessCheck.jsx';
+import EmailVerifyCard from '../components/dashboard/EmailVerifyCard.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { useToastStore } from '../store/toastStore.js';
 import { authApi, parseApiError } from '../lib/api.js';
@@ -87,6 +88,15 @@ const DashboardPage = () => {
                 <span className="muted-2" style={{ fontWeight: 500 }}>
                   /{user?.username}
                 </span>
+                {user?.emailVerified ? (
+                  <span className="badge badge-success" title="Your email is verified">
+                    <FiCheckCircle /> verified
+                  </span>
+                ) : (
+                  <span className="badge badge-neutral" title="Your email has not been verified yet">
+                    <FiMail /> unverified
+                  </span>
+                )}
               </h1>
               <p className="page-sub">
                 {neverPublished
@@ -120,6 +130,8 @@ const DashboardPage = () => {
               </AnimatePresence>
             </div>
           </div>
+
+          <EmailVerifyCard />
 
           <div className="dash-layout">
             <div className="dash-col">

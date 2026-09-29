@@ -20,6 +20,7 @@ import {
   FiLink2,
   FiMail,
   FiMousePointer,
+  FiRepeat,
   FiTrash2,
   FiUserCheck,
   FiUserX,
@@ -61,10 +62,12 @@ const AdminUserDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [busy, setBusy] = useState(''); // 'status' | 'verified' | 'password' | 'delete'
+  const [busy, setBusy] = useState(''); // 'status' | 'verified' | 'password' | 'delete' | 'otp'
   const [resetOpen, setResetOpen] = useState(false);
   const [resetValue, setResetValue] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpOpen, setOtpOpen] = useState(false);
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
 
@@ -144,6 +147,19 @@ const AdminUserDetailPage = () => {
       await adminApi.removeUser(user.id);
       toastSuccess(`@${user.username} was deleted`);
       navigate('/admin/users');
+    });
+
+  /**
+   * The only way a new code is issued. The server returns the code back to the
+   * admin caller because email delivery may not be configured yet — the admin
+   * relays it in person (the whole point of the request flow).
+   */
+  const resendOtp = () =>
+    runAction('otp', async () => {
+      const resp = await adminApi.resendUserOtp(user.id);
+      setOtpCode(resp.code);
+      setOtpOpen(true);
+      toastSuccess(resp.delivered ? 'A fresh code was emailed to the user' : 'A fresh code was issued — share the code shown');
     });
 
   const stats = [
@@ -275,6 +291,17 @@ const AdminUserDetailPage = () => {
                     >
                       Reset password
                     </Button>
+                    {!user?.emailVerified && (
+                      <Button
+                        variant="outline"
+                        icon={FiRepeat}
+                        loading={busy === 'otp'}
+                        disabled={busy !== '' && busy !== 'otp'}
+                        onClick={resendOtp}
+                      >
+                        Resend verification code
+                      </Button>
+                    )}
                     <Button
                       variant="danger"
                       icon={FiTrash2}
@@ -475,6 +502,38 @@ const AdminUserDetailPage = () => {
               <Button variant="primary" onClick={submitReset} loading={busy === 'password'} disabled={resetValue.length < 8}>
                 Reset password
               </Button>
+            </div>
+          </Modal>
+
+          <Modal open={otpOpen} onClose={() => setOtpOpen(false)} maxWidth={400} labelledBy="otp-code-title">
+            <div className="modal-pad">
+              <h3 className="card-title" id="otp-code-title" style={{ fontSize: 18, marginBottom: 6 }}>
+                Fresh verification code
+              </h3>
+              <p className="confirm-text">
+                Share this code with <strong>{user?.email}</strong>. It is valid for
+                15 minutes — the user enters it on their dashboard to verify.
+              </p>
+              <div
+                className="small strong"
+                style={{
+                  fontSize: 26,
+                  letterSpacing: 8,
+                  textAlign: 'center',
+                  padding: '14px 0',
+                  background: 'var(--line-soft)',
+                  borderRadius: 12,
+                  margin: '14px 0 4px',
+                  userSelect: 'all',
+                }}
+              >
+                {otpCode}
+              </div>
+              <div className="modal-actions" style={{ marginTop: 8 }}>
+                <Button variant="primary" onClick={() => setOtpOpen(false)}>
+                  Done
+                </Button>
+              </div>
             </div>
           </Modal>
 
