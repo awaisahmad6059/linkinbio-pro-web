@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiBarChart2, FiCopy, FiExternalLink, FiEdit3, FiLogOut, FiSettings } from 'react-icons/fi';
+import { FiBarChart2, FiCopy, FiExternalLink, FiEdit3, FiLogOut, FiSettings, FiShield } from 'react-icons/fi';
 import Logo from '../common/Logo.jsx';
 import Avatar from '../common/Avatar.jsx';
 import { useAuthStore } from '../../store/authStore.js';
@@ -71,6 +71,15 @@ const AppShell = ({ children }) => {
                 <span>{label}</span>
               </NavLink>
             ))}
+
+            {/* An admin still owns a personal dashboard; this keeps the admin
+                area one click away instead of a browser-back detour. */}
+            {user?.role === 'admin' && (
+              <NavLink to="/admin" className={({ isActive }) => `app-nav-link${isActive ? ' is-active' : ''}`} title="Back to the admin area">
+                <FiShield />
+                <span>Admin</span>
+              </NavLink>
+            )}
           </nav>
 
           <div className="row gap-8" style={{ marginLeft: 'auto' }}>
