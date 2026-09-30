@@ -752,7 +752,10 @@ const AdminUserDetailPage = () => {
 
           <ConfirmDialog
             open={deletingLink !== null}
-            title={`Delete &ldquo;${deletingLink?.label}&rdquo;?`}
+            // Real curly quotes, not &ldquo;. HTML entities are only decoded in
+            // JSX text children — inside a template string they render as the
+            // literal characters, which is what the dialog was showing.
+            title={`Delete “${deletingLink?.label}”?`}
             message={
               deletingLink?.isBlocked
                 ? 'This link is already blocked, so deleting it will not let the address back in. To let it in again, unblock it first.'
