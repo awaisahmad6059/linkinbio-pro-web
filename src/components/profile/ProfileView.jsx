@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowUpRight } from 'react-icons/fi';
 import LinkIcon from '../common/LinkIcon.jsx';
+import VerifiedBadge from '../common/VerifiedBadge.jsx';
 import { cn } from '../../lib/utils.js';
 import { opensInNewTab, OUTBOUND_REL, toDestination as destOf } from '../../lib/linkUrl.js';
 
@@ -86,6 +87,19 @@ export const ProfileView = ({
             transition={{ duration: 0.4, delay: 0.2 }}
           >
             @{profile.username}
+            {/* The administrator's mark, carried through to the public page.
+                Rendered on the strength of the field alone, with no `compact`
+                or `isPage` guard: the dashboard phone preview is compact yet
+                must show the tick, and the theme thumbnails / landing showcase
+                pass a hardcoded sample profile that simply has no
+                `emailVerified`, so they stay un-ticked on their own. */}
+            {profile.emailVerified && (
+              <VerifiedBadge
+                tick
+                className="profile-handle-tick"
+                title="This account is verified"
+              />
+            )}
           </motion.p>
         )}
 

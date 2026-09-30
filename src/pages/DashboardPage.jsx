@@ -72,6 +72,10 @@ const DashboardPage = () => {
     displayName: user?.displayName,
     bio: user?.bio,
     profilePhotoUrl: user?.profilePhotoUrl,
+    // Carried so the phone preview draws the same verified tick the public
+    // page will. Dropping it here is what made the preview drift from the
+    // published page in the first place.
+    emailVerified: user?.emailVerified,
   };
 
   const neverPublished = !user?.publishedAt;

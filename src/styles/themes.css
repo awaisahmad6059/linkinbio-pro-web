@@ -91,6 +91,19 @@
   color: var(--pf-sub);
 }
 
+/* The verified tick sitting beside the handle. A touch smaller than the 16px
+   dashboard badge so it reads as an accent on the handle, not a separate
+   control, and nudged down by a pixel because an inline-flex disc sits on the
+   text baseline. */
+.profile-handle-tick {
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  margin-left: 5px;
+  vertical-align: middle;
+  transform: translateY(1px);
+}
+
 .profile-bio {
   margin-top: 16px;
   font-size: 14.5px;
