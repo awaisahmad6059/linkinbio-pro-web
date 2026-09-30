@@ -67,9 +67,8 @@
    that overflow the viewport. Clipping prevents the scrollbar on both
    the dashboard picker tile AND the public page.
    ====================================================================== */
-.theme-gradient .theme-tile .profile,
-.theme-gradient.profile.is-page,
-.theme-gradient .profile.is-page {
+.theme-tile-frame .theme-gradient.profile,
+.theme-gradient.profile.is-page {
   overflow: hidden;
 }
 
