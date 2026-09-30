@@ -13,9 +13,10 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSo
 import { FiLink2, FiPlus } from 'react-icons/fi';
 import LinkCard, { LinkCardOverlay } from './LinkCard.jsx';
 import LinkForm from './LinkForm.jsx';
+import UnblockRequestModal from './UnblockRequestModal.jsx';
 import Button from '../common/Button.jsx';
 import { LinkCardSkeleton } from '../common/Skeleton.jsx';
-import { linksApi, parseApiError } from '../../lib/api.js';
+import { linksApi, parseApiError, requestsApi } from '../../lib/api.js';
 import { useAuthStore } from '../../store/authStore.js';
 import { useToastStore } from '../../store/toastStore.js';
 
@@ -40,6 +41,11 @@ const LinkManager = () => {
   const [submitting, setSubmitting] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [askingFor, setAskingFor] = useState(null);
+  // Blocked link ids that already have an unblock request in the queue. Held by
+  // link id as well as by address: the server allows one open request per
+  // account, so a second blocked link on the same page is also covered.
+  const [unblockRequested, setUnblockRequested] = useState(() => new Set());
 
   const sensors = useSensors(
     // Small activation distance so a click on the handle still registers as a click.
@@ -55,6 +61,31 @@ const LinkManager = () => {
   useEffect(() => {
     setEditing(null);
     setFormOpen(false);
+  }, []);
+
+  /**
+   * Which blocked links already have a request waiting.
+   *
+   * Fetched rather than remembered, because "asked for" has to survive a reload:
+   * a user who closed the tab and came back tomorrow should see that their
+   * request is pending, not a button that will fail with a duplicate error.
+   *
+   * Failures are silent on purpose. A pending-request marker is a convenience —
+   * the worst outcome of not knowing is a button that answers the question — so a
+   * failed read must not put an error on screen for a list that otherwise loaded
+   * perfectly.
+   */
+  useEffect(() => {
+    let live = true;
+    requestsApi
+      .mine()
+      .then(({ requests }) => {
+        if (live) setUnblockRequested(new Set(requests.map((r) => r.link).filter(Boolean)));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
   }, []);
 
   const onDragStart = ({ active }) => setActiveId(active.id);
@@ -222,6 +253,8 @@ const LinkManager = () => {
                         }}
                         onDelete={handleDelete}
                         onToggle={handleToggle}
+                        onRequestUnblock={setAskingFor}
+                        unblockRequested={unblockRequested.has(link._id)}
                       />
                     </motion.li>
                   ))}
@@ -243,6 +276,21 @@ const LinkManager = () => {
           </div>
         )}
       </div>
+
+      <UnblockRequestModal
+        open={askingFor !== null}
+        link={askingFor}
+        onClose={() => setAskingFor(null)}
+        // Marked here rather than inside the modal: the card is what has to stop
+        // offering the button, and it is the modal's parent's state.
+        onSent={(linkId) =>
+          setUnblockRequested((prev) => {
+            const next = new Set(prev);
+            next.add(linkId);
+            return next;
+          })
+        }
+      />
     </div>
   );
 };

@@ -5,16 +5,16 @@ import Modal from '../common/Modal.jsx';
 import Button from '../common/Button.jsx';
 import Field from '../common/Field.jsx';
 import { requestsApi, parseApiError } from '../../lib/api.js';
-import { REQUEST_TYPE_LABELS } from '../../lib/constants.js';
+import { REQUEST_TYPE_LABELS, SESSION_ONLY_REQUEST_TYPES } from '../../lib/constants.js';
 
 /**
- * A verification request is filed from the dashboard, where the account is
- * already signed in, so it is deliberately absent here: this form is for
- * people who cannot sign in at all, and offering it would only earn them a
- * rejection.
+ * Verification and unblock requests are filed from the dashboard, where the
+ * account is already signed in, so they are deliberately absent here: this form
+ * is for people who cannot sign in at all, and offering either would only earn
+ * them a rejection. The server refuses both without a session regardless.
  */
 const REQUEST_TYPE_OPTIONS = Object.entries(REQUEST_TYPE_LABELS)
-  .filter(([value]) => value !== 'verify-email')
+  .filter(([value]) => !SESSION_ONLY_REQUEST_TYPES.includes(value))
   .map(([value, label]) => ({
     value,
     label,

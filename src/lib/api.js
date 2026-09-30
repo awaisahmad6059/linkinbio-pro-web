@@ -144,6 +144,12 @@ export const adminApi = {
     api.patch(`/admin/links/${id}/block`, { isBlocked, reason }).then((r) => r.data.data),
   deleteLink: (id) =>
     api.delete(`/admin/links/${id}`).then((r) => r.data.data),
+  /**
+   * The denylist, by address. `unblock` takes a block-list row id, not a link id,
+   * because a block outlives every link pointing at it.
+   */
+  blocks: () => api.get('/admin/blocks').then((r) => r.data.data),
+  unblockAddress: (id) => api.delete(`/admin/blocks/${id}`).then((r) => r.data.data),
 };
 
 /* --------------------------------------------------------- notifications */
@@ -172,4 +178,18 @@ export const notificationsApi = {
  */
 export const requestsApi = {
   create: (payload) => api.post('/requests', payload).then((r) => r.data),
+  /**
+   * Asks an admin to lift the block on one of the caller's own links.
+   *
+   * Only the link id is sent. The server resolves the address from it and
+   * refuses anything that is not a blocked link belonging to the caller, so the
+   * URL cannot be used to request the removal of somebody else's block.
+   */
+  requestUnblock: (linkId, message = '') =>
+    api.post('/requests', { type: 'unblock-link', linkId, message }).then((r) => r.data),
+  /**
+   * The caller's own open unblock requests, so a blocked card can say "requested"
+   * after a reload instead of offering a button that is known to fail.
+   */
+  mine: () => api.get('/requests/mine').then((r) => r.data.data),
 };

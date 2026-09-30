@@ -14,8 +14,20 @@ import { displayAddress } from '../../lib/linkUrl.js';
  * Presentation only — the surrounding list owns the `<li>` and its entry/exit
  * animation. The inner element carries the dnd-kit drag transform so the drag
  * never fights the list's own reflow animation.
+ *
+ * `unblockRequested` is true when the owner already has this link's unblock
+ * request in the queue. It swaps the action for a settled state rather than
+ * leaving the button there to fail with "you already have one waiting".
  */
-const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy }) {
+const LinkCard = memo(function LinkCard({
+  link,
+  onEdit,
+  onDelete,
+  onToggle,
+  onRequestUnblock,
+  unblockRequested,
+  busy,
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link._id });
   // A blocked link is hidden from the public page by an admin. The show/hide
   // switch is not merely disabled for it — leaving it live would invite a
@@ -59,7 +71,8 @@ const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy
           <span className="link-blocked-note">
             <FiSlash aria-hidden="true" />
             Blocked by an admin
-            {link.blockedReason ? ` — ${link.blockedReason}` : ''}. Only they can bring it back.
+            {link.blockedReason ? ` — ${link.blockedReason}` : ''}.
+            {unblockRequested ? ' Your unblock request is waiting for review.' : ''}
           </span>
         )}
       </div>
@@ -82,13 +95,25 @@ const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy
         </button>
         {blocked ? (
           // Not a disabled switch. A switch that does nothing is worse than no
-          // switch: it looks like a control and reads as a bug.
-          <span
-            className="link-blocked-pill"
-            title="An administrator blocked this link. It cannot be shown from your dashboard."
-          >
-            blocked
-          </span>
+          // switch: it looks like a control and reads as a bug. The pill is gone
+          // for the same reason — a marker that only reports is not something to
+          // put where an action belongs. The card is already red and already says
+          // it is blocked, so this slot is better spent on the one thing the
+          // owner can actually do about it.
+          unblockRequested ? (
+            <span className="link-blocked-pill is-pending" title="An administrator is reviewing this link">
+              requested
+            </span>
+          ) : (
+            <button
+              className="link-unblock-btn"
+              type="button"
+              onClick={() => onRequestUnblock(link)}
+              disabled={busy}
+            >
+              Ask to unblock
+            </button>
+          )
         ) : (
           <Switch
             checked={!!link.isActive}

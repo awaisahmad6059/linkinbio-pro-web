@@ -10,6 +10,7 @@ import {
   FiMail,
   FiKey,
   FiMessageCircle,
+  FiSlash,
   FiSquare,
   FiTrash2,
   FiUser,
@@ -35,6 +36,10 @@ const TYPE_META = {
   'verify-email': { Icon: FiMail, color: '#6366f1' },
   'password-reset': { Icon: FiKey, color: '#f59e0b' },
   'account-suspend': { Icon: FiUserX, color: '#ef4444' },
+  // Red, because an unblock request is a blocked link sitting in the queue — the
+  // same colour as a suspension, so the rows that need a judgement call about
+  // content rather than about access look alike.
+  'unblock-link': { Icon: FiSlash, color: '#ef4444' },
   other: { Icon: FiHelpCircle, color: '#8b8aa3' },
 };
 const typeMeta = (type) => TYPE_META[type] || TYPE_META.other;
@@ -110,6 +115,68 @@ const AdminRequestsPage = () => {
     if (next === tab) return;
     setTab(next);
     setPage(1);
+  };
+
+  /**
+   * Lifts the block on an address straight from the queue, then closes the
+   * request as resolved.
+   *
+   * One action rather than two, because they are never wanted apart: an admin
+   * who has decided to unblock has by definition resolved the request, and
+   * leaving two buttons invites unblocking the address and then marking the
+   * request resolved anyway — which is the same result by accident, but says
+   * nothing about who decided.
+   *
+   * The request row carries the address, so this works even when the link is
+   * gone. That is the case this whole feature exists for: the owner cannot reach
+   * the per-link Unblock button once their link has been deleted, and the queue
+   * is where they are actually asking.
+   */
+  const unblockAndResolve = async (request) => {
+    if (!request.blockId) {
+      toastError('That address is not on the block list any more');
+      return;
+    }
+
+    setBusyId(request.id);
+
+    // The two calls cannot be atomic, and the order matters: the block is lifted
+    // first because that is the part the user asked for. If closing the request
+    // then fails, the address is already live — so the row comes off the queue
+    // anyway and the admin is told the bookkeeping did not save, rather than being
+    // left a row whose action now fails every time they press it.
+    let affected = 0;
+    try {
+      const res = await adminApi.unblockAddress(request.blockId);
+      affected = res.affectedLinks || 0;
+    } catch (err) {
+      toastError(parseApiError(err).message);
+      setBusyId('');
+      return;
+    }
+
+    const dropRow = () =>
+      setData((prev) =>
+        prev ? { ...prev, requests: prev.requests.filter((r) => r.id !== request.id), total: Math.max(0, prev.total - 1) } : prev
+      );
+
+    try {
+      await adminApi.setRequestStatus(request.id, 'resolved', {
+        outcome: 'resolved',
+        note: 'Unblocked after review.',
+      });
+      dropRow();
+      toastSuccess(
+        affected > 0
+          ? `Address unblocked and ${affected} link${affected === 1 ? '' : 's'} restored`
+          : 'Address unblocked'
+      );
+    } catch (err) {
+      dropRow();
+      toastError(`Address unblocked, but closing the request failed: ${parseApiError(err).message}`);
+    } finally {
+      setBusyId('');
+    }
   };
 
   /**
@@ -453,7 +520,17 @@ const AdminRequestsPage = () => {
                             )}
                           </td>
                           <td>
-                            <div className="small truncate" style={{ maxWidth: 300 }} title={r.message}>
+                            {/* The address an unblock request is actually about.
+                                Shown above the message because it is what the admin
+                                has to rule on — the message is only the owner's
+                                account of it. */}
+                            {r.type === 'unblock-link' && r.url && (
+                              <div className="small strong truncate" style={{ maxWidth: 300 }} title={r.url}>
+                                <FiSlash style={{ verticalAlign: '-2px', marginRight: 4, color: '#ef4444' }} />
+                                {r.url}
+                              </div>
+                            )}
+                            <div className="small truncate" style={{ maxWidth: 300, marginTop: r.url ? 3 : 0 }} title={r.message}>
                               {r.message || <span className="tiny muted">No message left</span>}
                             </div>
                             {/* The answer the user was given, kept visible so the
@@ -476,6 +553,32 @@ const AdminRequestsPage = () => {
                           <td className="ta-right">
                             {tab === 'open' && (
                               <div className="row" style={{ gap: 8, justifyContent: 'flex-end' }}>
+                                {/* An unblock request gets the remedy on its own row. Everywhere else the
+                                    remedy lives on the account screen, but here
+                                    the address may have no link left to go and
+                                    look at, so the queue is the only place the
+                                    decision can be carried out. */}
+                                {r.type === 'unblock-link' && (
+                                  r.blockId ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      icon={FiSlash}
+                                      loading={busyId === r.id}
+                                      disabled={busyId !== '' && busyId !== r.id}
+                                      onClick={() => unblockAndResolve(r)}
+                                    >
+                                      Unblock
+                                    </Button>
+                                  ) : (
+                                    <span
+                                      className="badge badge-neutral"
+                                      title="This address is no longer on the block list, so nothing needs lifting"
+                                    >
+                                      already unblocked
+                                    </span>
+                                  )
+                                )}
                                 {/* Going to the account is the common case: most
                                     requests are answered by a change there, not
                                     by ticking a box. */}

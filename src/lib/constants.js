@@ -71,12 +71,29 @@ export const USERNAME_MAX = 24;
  * Help-request types, kept in sync with `REQUEST_TYPES` on the server. The
  * login screen and the dashboard verification card both read this list.
  */
-export const REQUEST_TYPES = ['verify-email', 'password-reset', 'account-suspend', 'other'];
+export const REQUEST_TYPES = [
+  'verify-email',
+  'password-reset',
+  'account-suspend',
+  'unblock-link',
+  'other',
+];
+
+/**
+ * Types that are raised from the dashboard against the caller's own account, and
+ * are therefore not offered on the public "cannot sign in" form.
+ *
+ * Excluded by list rather than one exclusion at a time, so a new session-only
+ * type cannot appear on the login screen by being added to `REQUEST_TYPES`
+ * without remembering to hide it there.
+ */
+export const SESSION_ONLY_REQUEST_TYPES = ['verify-email', 'unblock-link'];
 
 export const REQUEST_TYPE_LABELS = {
   'verify-email': 'Please verify my email',
   'password-reset': 'I forgot my password',
   'account-suspend': 'My account was suspended',
+  'unblock-link': 'Please unblock my link',
   other: 'Something else',
 };
 

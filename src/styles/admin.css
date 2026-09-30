@@ -58,6 +58,32 @@
   box-shadow: 0 0 0 3px var(--brand-50);
 }
 
+/* ------------------------------------------------------------ block list */
+
+/*
+ * One blocked address.
+ *
+ * A row rather than a table row: an address has three pieces of information and
+ * one action, and giving them columns would mean a header that repeats the same
+ * labels three times over for a list that is read rather than compared. The URL
+ * is the identity and so is the largest thing on the row; the reason and the
+ * blast radius sit under it, and the action is pinned right.
+ */
+.admin-block-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid #ef4444;
+  border-radius: var(--r);
+  background: var(--surface);
+}
+.admin-block-row:hover {
+  border-color: var(--brand-300, var(--line));
+  border-left-color: #ef4444;
+}
+
 /* ----------------------------------------------------------------- tables */
 
 .admin-table-card {

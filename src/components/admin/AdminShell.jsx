@@ -9,6 +9,7 @@ import {
   FiInbox,
   FiLogOut,
   FiSettings,
+  FiSlash,
   FiUsers,
 } from 'react-icons/fi';
 import Logo from '../common/Logo.jsx';
@@ -21,6 +22,7 @@ const NAV = [
   { to: '/admin', label: 'Overview', Icon: FiGrid, end: true },
   { to: '/admin/users', label: 'Users', Icon: FiUsers, end: false },
   { to: '/admin/requests', label: 'Requests', Icon: FiInbox, end: false },
+  { to: '/admin/blocks', label: 'Blocked', Icon: FiSlash, end: false },
   { to: '/admin/insights', label: 'Insights', Icon: FiBarChart2, end: false },
 ];
 
