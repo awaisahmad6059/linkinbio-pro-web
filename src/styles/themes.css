@@ -68,7 +68,8 @@
    the dashboard picker tile AND the public page.
    ====================================================================== */
 .theme-tile-frame .theme-gradient.profile,
-.theme-gradient.profile.is-page {
+.theme-gradient.profile.is-page,
+.theme-custom.profile.is-page {
   overflow: hidden;
 }
 
