@@ -128,8 +128,18 @@ export const adminApi = {
     api
       .get('/admin/requests', { params: { status, page, limit } })
       .then((r) => r.data.data),
+  /**
+   * Ids for one tab, no rows. Backs "select all", which has to cover every
+   * request in the tab rather than just the current page, so the selection is
+   * not silently truncated at 25.
+   */
+  requestIds: (status = 'open') =>
+    api.get('/admin/requests/ids', { params: { status } }).then((r) => r.data.data),
   setRequestStatus: (id, status, extra = {}) =>
     api.patch(`/admin/requests/${id}`, { status, ...extra }).then((r) => r.data.data.request),
+  /** One call for any selection size, so partial and select-all share a path. */
+  deleteRequests: (ids) =>
+    api.post('/admin/requests/bulk-delete', { ids }).then((r) => r.data.data),
 };
 
 /* --------------------------------------------------------- notifications */

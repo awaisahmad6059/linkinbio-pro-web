@@ -3,12 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiCheckCircle,
+  FiCheckSquare,
   FiExternalLink,
   FiHelpCircle,
   FiInbox,
   FiMail,
   FiKey,
   FiMessageCircle,
+  FiSquare,
+  FiTrash2,
   FiUser,
   FiUserX,
   FiXCircle,
@@ -19,6 +22,7 @@ import Skeleton from '../../components/common/Skeleton.jsx';
 import Button from '../../components/common/Button.jsx';
 import Modal from '../../components/common/Modal.jsx';
 import Field from '../../components/common/Field.jsx';
+import ConfirmDialog from '../../components/common/ConfirmDialog.jsx';
 import { adminApi, parseApiError } from '../../lib/api.js';
 import { REQUEST_OUTCOME_LABELS, REQUEST_TYPE_LABELS } from '../../lib/constants.js';
 import { formatNumber, formatRelative } from '../../lib/utils.js';
@@ -65,6 +69,15 @@ const AdminRequestsPage = () => {
   const [busyId, setBusyId] = useState('');
   // The request currently being closed out, plus the answer being composed.
   const [closing, setClosing] = useState(null);
+  // Ids ticked for deletion. Held as a Set so ticking a row is O(1) and the
+  // select-all tick is a single swap rather than a walk over every id.
+  const [selected, setSelected] = useState(() => new Set());
+  // Set when "select all" has pulled in the whole tab, so the header checkbox
+  // can show a third state instead of claiming less than is actually ticked.
+  const [allInTab, setAllInTab] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,6 +159,114 @@ const AdminRequestsPage = () => {
     }
   };
 
+  /* ------------------------------------------------------------ selection */
+
+  // A selection belongs to the rows it was made against. Switching tab or page
+  // shows a different set, so carrying the ticks over would mean deleting
+  // something the admin could not see ticked.
+  useEffect(() => {
+    setSelected(new Set());
+    setAllInTab(false);
+  }, [tab, page, attempt]);
+
+  const toggleRow = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+    // Unticking anything means the tab is no longer fully selected, whatever
+    // the header happens to show a moment later.
+    setAllInTab(false);
+  };
+
+  /**
+   * Select-all, twice: the rows on screen, and the rest of the tab.
+   *
+   * Only the visible page can be ticked from what is already loaded, so
+   * "everything" needs the tab's id list from the server. Without that, an admin
+   * with 60 open requests on a 25-row page would select all, press delete, and
+   * remove 25 of 60 while the toast said 25 — so the scope has to be explicit
+   * and the count has to be real.
+   */
+  const clearSelection = () => {
+    setSelected(new Set());
+    setAllInTab(false);
+  };
+
+  const toggleSelectAll = async () => {
+    const visibleIds = requests.map((r) => r.id);
+    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+
+    if (allVisibleSelected || allInTab) {
+      clearSelection();
+      return;
+    }
+
+    setSelected(new Set(visibleIds));
+    setSelectingAll(true);
+    try {
+      const { ids } = await adminApi.requestIds(tab);
+      setSelected(new Set(ids));
+      setAllInTab(true);
+    } catch (err) {
+      // The page is still ticked, so the admin can delete what they can see;
+      // the toast says the rest of the tab was left alone.
+      toastError(parseApiError(err).message);
+    } finally {
+      setSelectingAll(false);
+    }
+  };
+
+  /**
+   * Deletes the ticked requests and drops them from the table.
+   *
+   * The rows are removed locally rather than triggering a refetch, so the table
+   * settles in place instead of flashing a skeleton. The count falls by exactly
+   * what the server reports, which is lower than the number ticked if some ids
+   * were already gone — the toast says so rather than quietly claiming success.
+   */
+  const confirmBulkDelete = async () => {
+    const ids = [...selected];
+    if (!ids.length) return;
+
+    setDeleting(true);
+    try {
+      const { deleted } = await adminApi.deleteRequests(ids);
+      setConfirmDelete(false);
+      clearSelection();
+
+      setData((prev) => {
+        if (!prev) return prev;
+        const gone = new Set(ids);
+        return {
+          ...prev,
+          requests: prev.requests.filter((r) => !gone.has(r.id)),
+          total: Math.max(0, prev.total - deleted),
+        };
+      });
+
+      if (deleted === ids.length) {
+        toastSuccess(`${deleted} request${deleted === 1 ? '' : 's'} deleted`);
+      } else {
+        toastError(`Deleted ${deleted} of ${ids.length} — the rest were already gone`);
+      }
+    } catch (err) {
+      toastError(parseApiError(err).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const selectedCount = selected.size;
+  const visibleIds = requests.map((r) => r.id);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
+  const someVisibleSelected = visibleIds.some((id) => selected.has(id)) && !allVisibleSelected;
+
   return (
     <AdminShell>
       <PageTransition className="page">
@@ -181,7 +302,53 @@ const AdminRequestsPage = () => {
             </div>
           )}
 
-          <div className="chart-card admin-table-card" style={{ padding: 0, overflow: 'hidden', marginTop: 18 }}>
+          {/* Bulk actions live in their own bar rather than in the page header,
+              so they appear only once there is something to delete and the
+              permanent-ness of the action stays visually separated from the
+              harmless tab switch above it. */}
+          {!loading && requests.length > 0 && (
+            <div className="row" style={{ marginTop: 16, gap: 10, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={toggleSelectAll}
+                disabled={selectingAll}
+                aria-pressed={allInTab}
+              >
+                {allInTab ? <FiCheckSquare /> : <FiSquare />}
+                {selectingAll ? 'Selecting…' : allInTab ? 'Clear selection' : 'Select all'}
+              </button>
+
+              {selectedCount > 0 && (
+                <>
+                  <span className="small muted">
+                    {formatNumber(selectedCount)} selected
+                    {allInTab && total > visibleIds.length ? ` of ${formatNumber(total)} in this tab` : ''}
+                  </span>
+                  <button
+                    type="button"
+                    className="tiny strong"
+                    onClick={clearSelection}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--brand)' }}
+                  >
+                    Clear
+                  </button>
+                  <div style={{ marginLeft: 'auto' }}>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon={FiTrash2}
+                      onClick={() => setConfirmDelete(true)}
+                    >
+                      Delete selected
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="chart-card admin-table-card" style={{ padding: 0, overflow: 'hidden', marginTop: selectedCount > 0 ? 10 : 18 }}>
             {loading ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 20 }}>
                 {[0, 1, 2, 3, 4].map((i) => (
@@ -207,6 +374,23 @@ const AdminRequestsPage = () => {
                 <table className="admin-table">
                   <thead>
                     <tr>
+                      <th scope="col" style={{ width: 40 }}>
+                        {/* Tri-state rather than a plain on/off: after "select
+                            all" the header has to be able to say "some of the
+                            tab is ticked" or the admin cannot tell what the
+                            next click will do. */}
+                        <input
+                          type="checkbox"
+                          className="checkbox"
+                          checked={allVisibleSelected || allInTab}
+                          ref={(el) => {
+                            if (el) el.indeterminate = someVisibleSelected;
+                          }}
+                          onChange={toggleSelectAll}
+                          disabled={selectingAll}
+                          aria-label="Select all requests in this tab"
+                        />
+                      </th>
                       <th scope="col">Type</th>
                       <th scope="col">Who</th>
                       <th scope="col">Message</th>
@@ -219,13 +403,27 @@ const AdminRequestsPage = () => {
                   <tbody>
                     {requests.map((r, i) => {
                       const { Icon, color } = typeMeta(r.type);
+                      const ticked = selected.has(r.id);
                       return (
                         <motion.tr
                           key={r.id}
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.28, delay: Math.min(i, 12) * 0.03 }}
+                          // Tinted so it is obvious which rows a delete will
+                          // take. A tick that is easy to miss is how the wrong
+                          // rows get deleted.
+                          style={ticked ? { background: 'var(--brand-50)' } : undefined}
                         >
+                          <td>
+                            <input
+                              type="checkbox"
+                              className="checkbox"
+                              checked={selected.has(r.id)}
+                              onChange={() => toggleRow(r.id)}
+                              aria-label={`Select the ${REQUEST_TYPE_LABELS[r.type] || r.type} request from ${r.email}`}
+                            />
+                          </td>
                           <td style={{ borderLeft: `3px solid ${color}`, paddingLeft: 14 }}>
                             <div className="small strong" style={{ whiteSpace: 'nowrap' }}>
                               <span style={{ marginRight: 6 }}><Icon style={{ color, verticalAlign: '-2px' }} /></span>
@@ -349,6 +547,26 @@ const AdminRequestsPage = () => {
         </div>
       </PageTransition>
 
+      {/* Deleting is the only way a request leaves the panel without being
+          handled, so it cannot be undone from anywhere in the UI. The wording
+          states the count either way, and says "tab" when the selection spans
+          more than the visible page — otherwise a select-all looks like it
+          removed a screenful when it removed a queue. */}
+      <ConfirmDialog
+        open={confirmDelete}
+        title={allInTab ? 'Delete every request in this tab?' : 'Delete the selected requests?'}
+        message={
+          allInTab
+            ? `This permanently deletes all ${formatNumber(selectedCount)} requests in the ${tab} tab, including any on other pages. This cannot be undone.`
+            : `This permanently deletes ${formatNumber(selectedCount)} selected request${selectedCount === 1 ? '' : 's'}. This cannot be undone.`
+        }
+        confirmLabel="Delete"
+        icon={<FiTrash2 />}
+        loading={deleting}
+        onConfirm={confirmBulkDelete}
+        onClose={() => (deleting ? undefined : setConfirmDelete(false))}
+      />
+
       {/* Closing a request is a decision with two parts — did you do it, and do
           you want to say why — so it gets a dialog rather than a bare button.
           The note is optional: an admin who just ticks "resolved" should not be
@@ -359,7 +577,7 @@ const AdminRequestsPage = () => {
         maxWidth={460}
         labelledBy="close-request-title"
       >
-        <div>
+        <>
           <h3 className="card-title" id="close-request-title" style={{ fontSize: 18, marginBottom: 4 }}>
             Close this request
           </h3>
@@ -420,7 +638,7 @@ const AdminRequestsPage = () => {
               {closing?.outcome === 'rejected' ? 'Decline request' : 'Resolve request'}
             </Button>
           </div>
-        </div>
+        </>
       </Modal>
     </AdminShell>
   );
