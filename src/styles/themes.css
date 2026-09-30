@@ -61,6 +61,17 @@
   text-align: center;
 }
 
+/* ======================================================================
+   Fix: Remove extra scrollbar from Gradient theme thumbnail only.
+   The Gradient theme has large absolute-positioned blob backgrounds (340px)
+   that overflow the 116px-wide picker tile. Clipping prevents the scrollbar
+   while the public page (which has no such picker ancestor) is completely
+   unaffected.
+   ====================================================================== */
+.theme-gradient .theme-tile .profile {
+  overflow: hidden;
+}
+
 /* ------------------------------------------------------------ avatar --- */
 
 .profile-avatar {
