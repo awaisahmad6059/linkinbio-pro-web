@@ -4,8 +4,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FiBarChart2, FiCopy, FiExternalLink, FiEdit3, FiLogOut, FiSettings, FiShield } from 'react-icons/fi';
 import Logo from '../common/Logo.jsx';
 import Avatar from '../common/Avatar.jsx';
+import NotificationBell from '../dashboard/NotificationBell.jsx';
 import { useAuthStore } from '../../store/authStore.js';
 import { useToastStore } from '../../store/toastStore.js';
+import { useNotificationStore } from '../../store/notificationStore.js';
 import { publicOrigin } from '../../lib/utils.js';
 
 const NAV = [
@@ -27,6 +29,12 @@ const AppShell = ({ children }) => {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const startPolling = useNotificationStore((s) => s.startPolling);
+
+  // The bell polls the unread count for as long as this shell is mounted, and
+  // the teardown stops it on sign-out — an interval left running would keep
+  // asking with a token that no longer exists.
+  useEffect(() => startPolling(), [startPolling]);
 
   useEffect(() => {
     const onClick = (e) => {
@@ -106,6 +114,10 @@ const AppShell = ({ children }) => {
                 </a>
               </>
             )}
+
+            {/* The bell sits ahead of the account menu: a message from the team
+                is the one thing here that is not about your own account. */}
+            <NotificationBell />
 
             <div ref={menuRef} style={{ position: 'relative' }}>
               <motion.button

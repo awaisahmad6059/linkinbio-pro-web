@@ -122,11 +122,31 @@ export const adminApi = {
   setEmailVerified: (id, emailVerified) =>
     api.patch(`/admin/users/${id}/email-verified`, { emailVerified }).then((r) => r.data.data.user),
   removeUser: (id) => api.delete(`/admin/users/${id}`).then((r) => r.data),
+  notifyUser: (id, message) =>
+    api.post(`/admin/users/${id}/notify`, { message }).then((r) => r.data.data),
   requests: ({ status = 'open', page = 1, limit = 25 } = {}) =>
     api
       .get('/admin/requests', { params: { status, page, limit } })
       .then((r) => r.data.data),
-  setRequestStatus: (id, status) => api.patch(`/admin/requests/${id}`, { status }).then((r) => r.data.data.request),
+  setRequestStatus: (id, status, extra = {}) =>
+    api.patch(`/admin/requests/${id}`, { status, ...extra }).then((r) => r.data.data.request),
+};
+
+/* --------------------------------------------------------- notifications */
+
+/**
+ * The dashboard bell.
+ *
+ * `unreadCount` is the only call made on a timer, and it returns a single
+ * integer, so a long-lived tab stays cheap. `list` is fetched when the panel
+ * opens, not on a schedule.
+ */
+export const notificationsApi = {
+  list: (page = 1, limit = 20) =>
+    api.get('/notifications', { params: { page, limit } }).then((r) => r.data.data),
+  unreadCount: () => api.get('/notifications/unread-count').then((r) => r.data.data),
+  markRead: (id) => api.patch(`/notifications/${id}/read`).then((r) => r.data.data),
+  markAllRead: () => api.patch('/notifications/read-all').then((r) => r.data.data),
 };
 
 /* --------------------------------------------------------------- requests */

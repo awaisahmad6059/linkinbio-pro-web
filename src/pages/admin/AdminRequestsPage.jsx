@@ -3,19 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiCheckCircle,
+  FiExternalLink,
   FiHelpCircle,
   FiInbox,
   FiMail,
   FiKey,
+  FiMessageCircle,
   FiUser,
   FiUserX,
+  FiXCircle,
 } from 'react-icons/fi';
 import PageTransition from '../../components/common/PageTransition.jsx';
 import AdminShell from '../../components/admin/AdminShell.jsx';
 import Skeleton from '../../components/common/Skeleton.jsx';
 import Button from '../../components/common/Button.jsx';
+import Modal from '../../components/common/Modal.jsx';
+import Field from '../../components/common/Field.jsx';
 import { adminApi, parseApiError } from '../../lib/api.js';
-import { REQUEST_TYPE_LABELS } from '../../lib/constants.js';
+import { REQUEST_OUTCOME_LABELS, REQUEST_TYPE_LABELS } from '../../lib/constants.js';
 import { formatNumber, formatRelative } from '../../lib/utils.js';
 import { useToastStore } from '../../store/toastStore.js';
 import { AdminErrorNote } from './AdminOverviewPage.jsx';
@@ -58,6 +63,8 @@ const AdminRequestsPage = () => {
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [busyId, setBusyId] = useState('');
+  // The request currently being closed out, plus the answer being composed.
+  const [closing, setClosing] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,15 +99,46 @@ const AdminRequestsPage = () => {
     setPage(1);
   };
 
-  const resolve = async (id) => {
+  /**
+   * Opens the close-out dialog for one request.
+   *
+   * Closing a request is two decisions at once — did you do what was asked, or
+   * turn it down, and did you want to tell the user why — so it asks for both
+   * rather than guessing a cheerful "resolved".
+   */
+  const openCloseDialog = (request) => {
+    setClosing({
+      request,
+      outcome: 'resolved',
+      note: '',
+    });
+  };
+
+  const confirmClose = async () => {
+    const { request, outcome, note } = closing;
+    const id = request.id;
+
     setBusyId(id);
     try {
-      await adminApi.setRequestStatus(id, 'resolved');
-      toastSuccess('Request resolved');
+      await adminApi.setRequestStatus(id, 'resolved', { outcome, note: note.trim() });
+      toastSuccess(
+        outcome === 'rejected'
+          ? `Request declined — ${request.user?.username || 'the user'} has been told`
+          : 'Request resolved — the user has been told'
+      );
+      setClosing(null);
+
       // Drop the row from the open queue immediately.
       setData((prev) =>
         prev ? { ...prev, requests: prev.requests.filter((r) => r.id !== id), total: Math.max(0, prev.total - 1) } : prev
       );
+
+      // Send the admin to the account so the actual remedy — verify, suspend,
+      // reset — is one click away instead of a second navigation later. A row
+      // with no account behind it has nowhere to go, so it just closes.
+      if (outcome === 'resolved' && request.user?.id) {
+        navigate(`/admin/users/${request.user.id}`);
+      }
     } catch (err) {
       toastError(parseApiError(err).message);
     } finally {
@@ -220,22 +258,56 @@ const AdminRequestsPage = () => {
                             <div className="small truncate" style={{ maxWidth: 300 }} title={r.message}>
                               {r.message || <span className="tiny muted">No message left</span>}
                             </div>
+                            {/* The answer the user was given, kept visible so the
+                                history reads as a conversation rather than a row
+                                that silently changed colour. */}
+                            {r.note && (
+                              <div
+                                className="tiny muted truncate"
+                                style={{ maxWidth: 300, marginTop: 3 }}
+                                title={r.note}
+                              >
+                                <FiMessageCircle style={{ verticalAlign: '-2px', marginRight: 4 }} />
+                                {r.note}
+                              </div>
+                            )}
                           </td>
                           <td className="small muted" style={{ whiteSpace: 'nowrap' }}>
                             {formatRelative(r.createdAt)}
                           </td>
                           <td className="ta-right">
                             {tab === 'open' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                icon={FiCheckCircle}
-                                loading={busyId === r.id}
-                                disabled={busyId !== '' && busyId !== r.id}
-                                onClick={() => resolve(r.id)}
-                              >
-                                Resolve
-                              </Button>
+                              <div className="row" style={{ gap: 8, justifyContent: 'flex-end' }}>
+                                {/* Going to the account is the common case: most
+                                    requests are answered by a change there, not
+                                    by ticking a box. */}
+                                {r.user?.id && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon={FiExternalLink}
+                                    onClick={() => navigate(`/admin/users/${r.user.id}`)}
+                                  >
+                                    Open
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  icon={FiCheckCircle}
+                                  loading={busyId === r.id}
+                                  disabled={busyId !== '' && busyId !== r.id}
+                                  onClick={() => openCloseDialog(r)}
+                                >
+                                  Close
+                                </Button>
+                              </div>
+                            )}
+                            {tab === 'resolved' && (
+                              <span className={`badge ${r.outcome === 'rejected' ? 'badge-warn' : 'badge-success'}`}>
+                                {r.outcome === 'rejected' ? <FiXCircle /> : <FiCheckCircle />}
+                                {REQUEST_OUTCOME_LABELS[r.outcome] || REQUEST_OUTCOME_LABELS.resolved}
+                              </span>
                             )}
                           </td>
                         </motion.tr>
@@ -276,6 +348,80 @@ const AdminRequestsPage = () => {
           )}
         </div>
       </PageTransition>
+
+      {/* Closing a request is a decision with two parts — did you do it, and do
+          you want to say why — so it gets a dialog rather than a bare button.
+          The note is optional: an admin who just ticks "resolved" should not be
+          forced to type an explanation they have nothing to add. */}
+      <Modal
+        open={closing !== null}
+        onClose={() => (busyId ? null : setClosing(null))}
+        maxWidth={460}
+        labelledBy="close-request-title"
+      >
+        <div>
+          <h3 className="card-title" id="close-request-title" style={{ fontSize: 18, marginBottom: 4 }}>
+            Close this request
+          </h3>
+          <p className="hint" style={{ marginBottom: 16 }}>
+            {closing?.request?.user?.username
+              ? `This tells ${closing.request.user.username} what you decided.`
+              : 'This request has no account behind it, so there is nobody to notify.'}
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <span className="label">What did you decide?</span>
+            <div className="row" style={{ gap: 8 }}>
+              {['resolved', 'rejected'].map((value) => {
+                const active = closing?.outcome === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`btn btn-sm ${active ? 'btn-primary' : 'btn-outline'}`}
+                    aria-pressed={active}
+                    onClick={() => setClosing((c) => ({ ...c, outcome: value }))}
+                  >
+                    {value === 'resolved' ? <FiCheckCircle /> : <FiXCircle />}
+                    {REQUEST_OUTCOME_LABELS[value]}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="hint" style={{ marginTop: -4 }}>
+              {closing?.outcome === 'rejected'
+                ? 'The user is told the request was declined, so keep the reason short and kind.'
+                : 'The user is told it was handled. Make the actual change on their account too.'}
+            </p>
+
+            <Field
+              label="Note to the user (optional)"
+              as="textarea"
+              rows={3}
+              maxLength={500}
+              placeholder="We couldn't verify this because the domain doesn't match the one on the account."
+              value={closing?.note || ''}
+              onChange={(e) => setClosing((c) => ({ ...c, note: e.target.value }))}
+              counter={`${(closing?.note || '').length}/500`}
+            />
+          </div>
+
+          <div className="row" style={{ gap: 8, marginTop: 18 }}>
+            <Button variant="ghost" className="btn-block" onClick={() => setClosing(null)} disabled={!!busyId}>
+              Cancel
+            </Button>
+            <Button
+              className="btn-block"
+              variant={closing?.outcome === 'rejected' ? 'danger' : 'primary'}
+              icon={closing?.outcome === 'rejected' ? FiXCircle : FiCheckCircle}
+              loading={busyId !== ''}
+              onClick={confirmClose}
+            >
+              {closing?.outcome === 'rejected' ? 'Decline request' : 'Resolve request'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </AdminShell>
   );
 };

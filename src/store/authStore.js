@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { authApi, linksApi, clearToken, getToken, setToken } from '../lib/api.js';
 import { parseApiError } from '../lib/api.js';
+import { useNotificationStore } from './notificationStore.js';
 
 /**
  * Global auth + page-data store.
@@ -87,6 +88,9 @@ export const useAuthStore = create((set, get) => ({
       error: null,
       justSignedIn: false,
     });
+    // The badge belongs to the account that just left, so it must not survive
+    // into whoever signs in next on this machine.
+    useNotificationStore.getState().reset();
   },
 
   setUser: (user) => set({ user }),

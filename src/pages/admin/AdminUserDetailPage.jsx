@@ -19,6 +19,7 @@ import {
   FiLink2,
   FiMail,
   FiMousePointer,
+  FiSend,
   FiTrash2,
   FiUserCheck,
   FiUserX,
@@ -65,6 +66,8 @@ const AdminUserDetailPage = () => {
   const [resetOpen, setResetOpen] = useState(false);
   const [resetValue, setResetValue] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [messageOpen, setMessageOpen] = useState(false);
+  const [messageValue, setMessageValue] = useState('');
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
 
@@ -144,6 +147,14 @@ const AdminUserDetailPage = () => {
       await adminApi.removeUser(user.id);
       toastSuccess(`@${user.username} was deleted`);
       navigate('/admin/users');
+    });
+
+  const submitMessage = () =>
+    runAction('message', async () => {
+      await adminApi.notifyUser(user.id, messageValue.trim());
+      setMessageOpen(false);
+      setMessageValue('');
+      toastSuccess(`Message delivered to @${user.username}'s notifications`);
     });
 
   const stats = [
@@ -272,6 +283,18 @@ const AdminUserDetailPage = () => {
                       onClick={() => setResetOpen(true)}
                     >
                       Reset password
+                    </Button>
+                    {/* The only action here that adds something rather than
+                        changing something: it writes to this user's bell and to
+                        nobody else on the system. */}
+                    <Button
+                      variant="outline"
+                      icon={FiSend}
+                      loading={busy === 'message'}
+                      disabled={busy !== '' && busy !== 'message'}
+                      onClick={() => setMessageOpen(true)}
+                    >
+                      Send message
                     </Button>
                     <Button
                       variant="danger"
@@ -445,6 +468,49 @@ const AdminUserDetailPage = () => {
               </div>
             </>
           )}
+
+          {/* Free-text note to one user. Scoped by the server to this account
+              alone — there is no "send to everyone" here on purpose. */}
+          <Modal open={messageOpen} onClose={() => setMessageOpen(false)} maxWidth={430} labelledBy="send-message-title">
+            <h3 className="card-title" id="send-message-title" style={{ fontSize: 18, marginBottom: 6 }}>
+              Message @{user?.username}
+            </h3>
+            <p className="confirm-text">
+              This appears in <strong>{user?.email}</strong>&apos;s notification bell on their
+              dashboard, and nowhere else. They will see a red dot until they read it.
+            </p>
+            <label className="small strong" style={{ display: 'block', margin: '12px 0 6px' }} htmlFor="admin-user-message">
+              Your message
+            </label>
+            <textarea
+              id="admin-user-message"
+              className="input"
+              rows={4}
+              autoFocus
+              maxLength={500}
+              value={messageValue}
+              onChange={(e) => setMessageValue(e.target.value)}
+              placeholder="We couldn't verify this because the domain doesn't match the one on your account."
+            />
+            <div className="row" style={{ justifyContent: 'space-between', marginTop: 6 }}>
+              <span className="tiny muted">Plain text, shown as written.</span>
+              <span className="tiny muted">{messageValue.length}/500</span>
+            </div>
+            <div className="modal-actions">
+              <Button variant="ghost" onClick={() => setMessageOpen(false)} disabled={busy === 'message'}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                icon={FiSend}
+                onClick={submitMessage}
+                loading={busy === 'message'}
+                disabled={messageValue.trim().length < 2}
+              >
+                Send message
+              </Button>
+            </div>
+          </Modal>
 
           <Modal open={resetOpen} onClose={() => setResetOpen(false)} maxWidth={430} labelledBy="reset-password-title">
             <h3 className="card-title" id="reset-password-title" style={{ fontSize: 18, marginBottom: 6 }}>

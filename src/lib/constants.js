@@ -84,3 +84,31 @@ export const REQUEST_STATUS_LABELS = {
   open: 'Open',
   resolved: 'Resolved',
 };
+
+/**
+ * How a request was closed out. `rejected` is a real answer, not a failure, and
+ * the admin panel offers both explicitly rather than folding "no" into "done".
+ */
+export const REQUEST_OUTCOME_LABELS = {
+  resolved: 'Resolved',
+  rejected: 'Declined',
+};
+
+/**
+ * Notification types, mirrored from `NOTIFICATION_TYPES` on the server.
+ *
+ * `tone` drives the icon's colour, so a decision that went the user's way reads
+ * differently from one that needs their attention: green for approved, amber for
+ * un-verified or suspended, red for declined, and the brand colour for a plain
+ * message from the team.
+ */
+export const NOTIFICATION_TONES = {
+  'email-verified': { tone: 'ok' },
+  'email-unverified': { tone: 'warn' },
+  suspended: { tone: 'danger' },
+  unsuspended: { tone: 'ok' },
+  'password-reset': { tone: 'warn' },
+  'request-resolved': { tone: 'ok' },
+  'request-rejected': { tone: 'danger' },
+  'admin-message': { tone: 'brand' },
+};
