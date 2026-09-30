@@ -485,13 +485,22 @@
 
 /* ------------------------------------------------------ theme picker -- */
 
+.theme-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+
 .theme-row {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding: 4px 20px 18px;
+  padding: 4px 12px 18px;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
 }
 .theme-row::-webkit-scrollbar {
   display: none;
@@ -556,6 +565,43 @@
   place-items: center;
   font-size: 9px;
   flex: none;
+}
+
+/* Scroll buttons for theme row */
+.theme-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.theme-scroll-btn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-600);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color var(--t) var(--ease), color var(--t) var(--ease), border-color var(--t) var(--ease), box-shadow var(--t) var(--ease);
+  box-shadow: var(--sh-sm);
+  z-index: 10;
+}
+.theme-scroll-btn:hover {
+  background: var(--brand-50);
+  color: var(--brand-700);
+  border-color: var(--brand-200);
+  box-shadow: var(--sh-md);
+}
+.theme-scroll-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.theme-scroll-btn:active {
+  transform: scale(0.95);
 }
 
 /* ------------------------------------------------------- phone preview -- */
