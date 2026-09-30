@@ -7,6 +7,7 @@ import {
   FiInbox,
   FiMail,
   FiKey,
+  FiUser,
   FiUserX,
 } from 'react-icons/fi';
 import PageTransition from '../../components/common/PageTransition.jsx';
@@ -28,6 +29,13 @@ const TYPE_META = {
   other: { Icon: FiHelpCircle, color: '#8b8aa3' },
 };
 const typeMeta = (type) => TYPE_META[type] || TYPE_META.other;
+
+/**
+ * The name the requester typed into the form, as one line. Only verification
+ * requests carry one, so this returns empty for the locked-out types raised
+ * from the login screen — which is correct, since that form never asks.
+ */
+const submittedName = (r) => [r.firstName, r.lastName].filter(Boolean).join(' ').trim();
 
 /**
  * The admin side of the user->admin help desk.
@@ -197,6 +205,16 @@ const AdminRequestsPage = () => {
                               {r.user?.displayName || r.user?.username || r.email}
                             </button>
                             <div className="tiny muted truncate">{r.email}</div>
+                            {/* The name the person typed into the form. Preferred
+                                over the account's display name when both exist,
+                                because it is what was actually submitted for
+                                this request. */}
+                            {submittedName(r) && (
+                              <div className="tiny" style={{ color: 'var(--ink-500)', marginTop: 3 }}>
+                                <FiUser style={{ verticalAlign: '-2px', marginRight: 4 }} />
+                                {submittedName(r)}
+                              </div>
+                            )}
                           </td>
                           <td>
                             <div className="small truncate" style={{ maxWidth: 300 }} title={r.message}>

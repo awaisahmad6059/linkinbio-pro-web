@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiCheck, FiEye, FiMail, FiZap } from 'react-icons/fi';
+import { FiCheck, FiEye, FiMail, FiShield, FiZap } from 'react-icons/fi';
 import PageTransition from '../components/common/PageTransition.jsx';
 import VerifiedBadge from '../components/common/VerifiedBadge.jsx';
 import AppShell from '../components/layout/AppShell.jsx';
@@ -8,10 +8,10 @@ import ProfileEditor from '../components/dashboard/ProfileEditor.jsx';
 import LinkManager from '../components/dashboard/LinkManager.jsx';
 import ThemePicker from '../components/dashboard/ThemePicker.jsx';
 import LivePreview from '../components/dashboard/LivePreview.jsx';
+import VerifyRequestModal from '../components/dashboard/VerifyRequestModal.jsx';
 import Button from '../components/common/Button.jsx';
 import ConfettiBurst from '../components/common/ConfettiBurst.jsx';
 import SuccessCheck from '../components/common/SuccessCheck.jsx';
-import EmailVerifyCard from '../components/dashboard/EmailVerifyCard.jsx';
 import { useAuthStore } from '../store/authStore.js';
 import { useToastStore } from '../store/toastStore.js';
 import { authApi, parseApiError } from '../lib/api.js';
@@ -29,6 +29,7 @@ const DashboardPage = () => {
   const [publishing, setPublishing] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [justPublished, setJustPublished] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
 
   // Keep local theme in sync if the profile loads/changes elsewhere.
   useEffect(() => {
@@ -109,6 +110,15 @@ const DashboardPage = () => {
             </div>
 
             <div className="row gap-8" style={{ position: 'relative' }}>
+              {/* An unverified account gets one button here instead of a banner
+                  of explanatory text across the page. The title beside it still
+                  shows the grey "unverified" state. */}
+              {!user?.emailVerified && user?.email && (
+                <Button variant="outline" icon={FiShield} onClick={() => setVerifyOpen(true)}>
+                  Request verification
+                </Button>
+              )}
+
               {user?.username && (
                 <a className="btn btn-outline" href={`/${user.username}`} target="_blank" rel="noreferrer noopener">
                   <FiEye /> View live page
@@ -134,7 +144,7 @@ const DashboardPage = () => {
             </div>
           </div>
 
-          <EmailVerifyCard />
+          <VerifyRequestModal open={verifyOpen} onClose={() => setVerifyOpen(false)} user={user} />
 
           <div className="dash-layout">
             <div className="dash-col">
