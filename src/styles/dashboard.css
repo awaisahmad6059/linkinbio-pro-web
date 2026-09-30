@@ -98,12 +98,50 @@
 
 .avatar-btn {
   position: relative;
+  /* `flex: none` is load-bearing. A flex item defaults to `flex-shrink: 1`, so
+     any greedy sibling — a share pill at its max width, a button asking for
+     `width: 100%` — took its space out of this 34px circle, which the browser
+     renders as a squashed ellipse rather than shrinking the circle. This is the
+     one item in the top bar that must never give up room. */
+  flex: none;
   border-radius: 50%;
   padding: 0;
+  /* Clips the circle to its own round border, and kills the baseline gap a
+     replaced element leaves under it in a button. */
+  overflow: hidden;
+  line-height: 0;
   transition: transform var(--t) var(--ease);
 }
 .avatar-btn:hover {
   transform: scale(1.06);
+}
+
+/* A top-bar action that sits between the share pill and the account menu.
+
+   Deliberately a copy of `.app-nav-link` rather than a reuse of it: this lives
+   in the right-hand cluster, not in the nav, and it needs `flex: none` on top of
+   the shared look. The dropdown's `.nav-link` rows are full-width and must keep
+   being so. */
+.app-top-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  height: 36px;
+  padding: 0 13px;
+  border-radius: var(--r-xs);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ink-500);
+  transition: color var(--t) var(--ease), background-color var(--t) var(--ease);
+}
+.app-top-action:hover {
+  color: var(--ink);
+  background: var(--line-soft);
+}
+.app-top-action svg {
+  flex: none;
 }
 
 /* --------------------------------------------------------- dashboard -- */
@@ -745,19 +783,26 @@
   background: #100e17;
   z-index: 3;
 }
+/* The screen is a fixed-height window onto a scrolling page, so it has to lay
+   its two children out as a column and let the profile take the remainder.
+
+   `height: 100%` on the profile — which is what this used to be — asked for the
+   full height of the screen *and then also* sat below the status bar. The two
+   overran by the height of the bar, and `overflow: hidden` on the screen quietly
+   ate the difference, so the last link was always sliced in half. `min-height: 0`
+   is what lets a flex child shrink below its content, which is the whole reason
+   the profile scrolls at all. */
 .phone-screen {
   position: relative;
+  display: flex;
+  flex-direction: column;
   border-radius: 30px;
   overflow: hidden;
   background: #fff;
   height: 560px;
 }
-.phone-screen .profile {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
 .phone-bar {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -767,6 +812,24 @@
   letter-spacing: -0.01em;
   color: var(--ink);
   background: var(--bg);
+}
+.phone-screen .profile {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Momentum scrolling inside a desktop preview reads as the page being stuck
+     halfway when it is only the mouse wheel's step size. */
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.phone-screen .profile::-webkit-scrollbar {
+  width: 4px;
+}
+.phone-screen .profile::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
 }
 .phone-bar-icons {
   display: flex;

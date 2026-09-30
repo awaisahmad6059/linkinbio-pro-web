@@ -29,7 +29,19 @@
   min-height: 100%;
   width: 100%;
   display: flex;
-  justify-content: center;
+  /* `safe center`, not plain `center`.
+
+     This element is a scroll container (`overflow-x: hidden` makes `overflow-y`
+     compute to `auto`), so once a page has more links than fit — which happens
+     the moment you add a fifth in the dashboard preview — a centred flex line
+     overflows in *both* directions. The overflow past the top edge cannot be
+     scrolled back to: the avatar slid up out of the frame and stayed gone.
+
+     `safe` resolves to the start edge exactly when centring would overflow, and
+     is identical to `center` in the normal case, so nothing that fits today
+     looks any different. Browsers without `safe` keep the old behaviour, which
+     is why the preview also no longer clips its own last link. */
+  justify-content: safe center;
   background: var(--pf-bg);
   background-image: var(--pf-bg-image);
   color: var(--pf-text);

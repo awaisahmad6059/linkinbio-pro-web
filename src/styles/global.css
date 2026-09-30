@@ -527,13 +527,21 @@ ol {
   border: 1px solid var(--line);
   display: block;
 }
+/* The initials placeholder, shown until a photo is uploaded.
+
+   Was brand-purple on a near-white lavender wash — brand-50 (#eef2ff) to #f5f3ff,
+   which is a contrast ratio of roughly 3:1 against the text colour. That reads as
+   a faded smudge rather than an avatar, especially at 34px in the top bar where
+   the eye is not looking for it. A filled gradient with white initials gives it
+   the same weight as a photo would have, so the account button never looks like
+   something failed to load. */
 .avatar-fallback {
   display: grid;
   place-items: center;
-  color: var(--brand);
+  color: #fff;
   font-weight: 700;
-  background: linear-gradient(140deg, var(--brand-50), #f5f3ff);
-  border: 1px solid var(--brand-100);
+  background: linear-gradient(140deg, var(--brand-600), var(--brand));
+  border: 0;
 }
 
 /* character counter */

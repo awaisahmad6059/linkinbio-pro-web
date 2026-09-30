@@ -112,16 +112,23 @@ const AdminShell = ({ children }) => {
                   </span>
                 </motion.button>
 
-                {/* An admin is still a person with their own page. */}
+                {/* An admin is still a person with their own page.
+
+                    `app-top-action`, not the account-menu's `nav-link`: this one
+                    sits in the top bar beside the share pill and the avatar, not
+                    in the dropdown. It also must not claim `width: 100%` the way
+                    the full-width menu rows do — a flex child asking for the
+                    whole row gets the whole row only by shrinking its siblings,
+                    and the 34px avatar next to it was being squeezed into a
+                    squashed, washed-out blob as a result. */}
                 <button
-                  className="nav-link"
-                  style={{ width: '100%', textAlign: 'left' }}
+                  className="app-top-action"
                   onClick={() => {
                     setMenuOpen(false);
                     navigate('/dashboard');
                   }}
                 >
-                  <FiSettings style={{ marginRight: 8 }} /> My page
+                  <FiSettings /> My page
                 </button>
               </>
             )}
