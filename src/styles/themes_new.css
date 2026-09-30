@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Public profile themes
    One shared component (`ProfileView`) is themed purely through the
    `.theme-*` classes below, so the dashboard phone preview and the real
@@ -32,8 +32,8 @@
   /* `safe center`, not plain `center`.
 
      This element is a scroll container (`overflow-x: hidden` makes `overflow-y`
-     compute to `auto`), so once a page has more links than fit — which happens
-     the moment you add a fifth in the dashboard preview — a centred flex line
+     compute to `auto`), so once a page has more links than fit â€” which happens
+     the moment you add a fifth in the dashboard preview â€” a centred flex line
      overflows in *both* directions. The overflow past the top edge cannot be
      scrolled back to: the avatar slid up out of the frame and stayed gone.
 
@@ -62,14 +62,13 @@
 }
 
 /* ======================================================================
-   Fix: Remove extra scrollbar from Gradient theme.
+   Fix: Remove extra scrollbar from Gradient theme thumbnail only.
    The Gradient theme has large absolute-positioned blob backgrounds (340px)
-   that overflow the viewport. Clipping prevents the scrollbar on both
-   the dashboard picker tile AND the public page.
+   that overflow the 116px-wide picker tile. Clipping prevents the scrollbar
+   while the public page (which has no such picker ancestor) is completely
+   unaffected.
    ====================================================================== */
-.theme-gradient .theme-tile .profile,
-.theme-gradient.profile.is-page,
-.theme-gradient .profile.is-page {
+.theme-gradient .theme-tile .profile {
   overflow: hidden;
 }
 
@@ -276,7 +275,7 @@
 }
 
 /* ==========================================================================
-   1. Minimal Light — white, black text, hairline borders
+   1. Minimal Light â€” white, black text, hairline borders
    ========================================================================== */
 
 .theme-minimal {
@@ -304,7 +303,7 @@
 }
 
 /* ==========================================================================
-   2. Dark Mode — near-black, soft glow on buttons
+   2. Dark Mode â€” near-black, soft glow on buttons
    ========================================================================== */
 
 .theme-dark {
@@ -329,7 +328,7 @@
 }
 
 /* ==========================================================================
-   3. Gradient — animated soft gradient + glassmorphism buttons
+   3. Gradient â€” animated soft gradient + glassmorphism buttons
    ========================================================================== */
 
 .theme-gradient {
@@ -416,7 +415,7 @@
 }
 
 /* ==========================================================================
-   4. Colorful / Bold — solid bright background, playful white buttons
+   4. Colorful / Bold â€” solid bright background, playful white buttons
    ========================================================================== */
 
 .theme-bold {
@@ -457,7 +456,7 @@
   --pf-btn-bg: #fffdf7;
 }
 
-/* Shared avatar breathing motion — a barely noticeable pulse on the ring so the
+/* Shared avatar breathing motion â€” a barely noticeable pulse on the ring so the
    page feels alive without ever pulling attention away from the links. Each
    theme supplies its own accent colour through these keyframes. */
 @keyframes pfRingPulse {
@@ -494,7 +493,7 @@
 }
 
 /* ==========================================================================
-   5. Nature / Soft — pastel background, earthy buttons, serif name
+   5. Nature / Soft â€” pastel background, earthy buttons, serif name
    ========================================================================== */
 
 .theme-nature {
@@ -536,7 +535,7 @@
 }
 
 /* ==========================================================================
-   6. Custom Photo — the user's own image, filling the whole screen
+   6. Custom Photo â€” the user's own image, filling the whole screen
    ========================================================================== */
 
 /*
@@ -546,9 +545,9 @@
  *
  * Three layers, in this order, and the split is deliberate:
  *
- *   ::before  the photo — the only layer the blur, brightness and zoom apply
+ *   ::before  the photo â€” the only layer the blur, brightness and zoom apply
  *            to, so moving a slider changes the picture and nothing else.
- *   ::after   the veil — a fixed darkening between the photo and the text. It is
+ *   ::after   the veil â€” a fixed darkening between the photo and the text. It is
  *            deliberately NOT affected by the brightness slider. Brightness is
  *            there for the photo; legibility is not something the user should be
  *            able to talk themselves out of, and a white photo at full
@@ -644,7 +643,7 @@
 }
 
 /* ==========================================================================
-   Compact mode — used inside the dashboard phone mockup
+   Compact mode â€” used inside the dashboard phone mockup
    ========================================================================== */
 
 .profile.is-compact .profile-inner {
