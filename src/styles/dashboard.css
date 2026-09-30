@@ -533,6 +533,10 @@
   width: 238%;
   padding-top: 16px;
 }
+
+.theme-tile-frame .profile {
+  justify-content: center;
+}
 .theme-tile-name {
   padding: 8px 10px 9px;
   font-size: 12px;

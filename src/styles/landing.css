@@ -419,6 +419,10 @@
   width: 200%;
   padding-top: 22px;
 }
+
+.theme-chip-frame .profile {
+  justify-content: center;
+}
 .theme-chip-name {
   padding: 12px 14px;
   font-size: 13.5px;
