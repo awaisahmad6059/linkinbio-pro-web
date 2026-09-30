@@ -140,6 +140,10 @@ export const adminApi = {
   /** One call for any selection size, so partial and select-all share a path. */
   deleteRequests: (ids) =>
     api.post('/admin/requests/bulk-delete', { ids }).then((r) => r.data.data),
+  setLinkBlocked: (id, isBlocked, reason = '') =>
+    api.patch(`/admin/links/${id}/block`, { isBlocked, reason }).then((r) => r.data.data),
+  deleteLink: (id) =>
+    api.delete(`/admin/links/${id}`).then((r) => r.data.data),
 };
 
 /* --------------------------------------------------------- notifications */

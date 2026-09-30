@@ -11,8 +11,10 @@ import {
   YAxis,
 } from 'recharts';
 import {
+  FiAlertTriangle,
   FiArrowLeft,
   FiCalendar,
+  FiCheckCircle,
   FiEye,
   FiExternalLink,
   FiKey,
@@ -20,6 +22,7 @@ import {
   FiMail,
   FiMousePointer,
   FiSend,
+  FiSlash,
   FiTrash2,
   FiUserCheck,
   FiUserX,
@@ -68,6 +71,13 @@ const AdminUserDetailPage = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [messageOpen, setMessageOpen] = useState(false);
   const [messageValue, setMessageValue] = useState('');
+  // Link moderation, tracked per link id so one row's spinner never freezes the
+  // rest of the table. The operation is part of it because Block and Delete sit
+  // side by side on the same row: without it, actioning one would spin both.
+  const [busyLink, setBusyLink] = useState({ id: '', op: '' });
+  const busyRow = (id, op) => busyLink.id === id && busyLink.op === op;
+  const [blocking, setBlocking] = useState(null); // { link, reason }
+  const [deletingLink, setDeletingLink] = useState(null);
   const toastSuccess = useToastStore((s) => s.success);
   const toastError = useToastStore((s) => s.error);
 
@@ -156,6 +166,96 @@ const AdminUserDetailPage = () => {
       setMessageValue('');
       toastSuccess(`Message delivered to @${user.username}'s notifications`);
     });
+
+  /* ---------------------------------------------------- link moderation */
+
+  /**
+   * Rewrites one link's block state in place, and any sibling row that pointed
+   * at the same address.
+   *
+   * The block is site-wide, so the panel does not pretend otherwise: if another
+   * account links the same destination, that row changes too, and the numbers
+   * the server reported are carried across so the totals on screen stay true.
+   * Patching only the clicked row would leave this page quietly disagreeing with
+   * the database.
+   */
+  const applyBlock = async (link, isBlocked, reason) => {
+    const { affectedLinks, affectedAccounts } = await adminApi.setLinkBlocked(link.id, isBlocked, reason);
+
+    setData((prev) => {
+      if (!prev) return prev;
+      const target = prev.links.find((l) => l.id === link.id);
+      if (!target) return prev;
+      return {
+        ...prev,
+        // Matched the way the server matched: on the address key, not the url
+        // string. Two rows on this page can point at one destination written
+        // differently — `http://` against `https://`, a `www.`, a trailing
+        // slash — and a string comparison would leave the second row claiming
+        // to be live while the database has it blocked.
+        links: prev.links.map((l) =>
+          l.id === target.id || (target.blockKey ? l.blockKey === target.blockKey : l.url === target.url)
+            ? {
+                ...l,
+                isBlocked,
+                blockedReason: isBlocked ? reason : '',
+                blockedAt: isBlocked ? new Date().toISOString() : null,
+              }
+            : l
+        ),
+      };
+    });
+
+    setBlocking(null);
+    if (isBlocked) {
+      toastSuccess(
+        affectedLinks > 1
+          ? `Blocked — ${affectedLinks} links on ${affectedAccounts} account${affectedAccounts === 1 ? '' : 's'} now hidden`
+          : 'Link blocked and hidden from the public page'
+      );
+    } else {
+      toastSuccess(
+        affectedLinks > 1
+          ? `Unblocked — ${affectedLinks} links are live again`
+          : 'Link is live again'
+      );
+    }
+  };
+
+  const submitBlock = () => {
+    if (!blocking) return;
+    const { link, reason } = blocking;
+    setBusyLink({ id: link.id, op: 'block' });
+    applyBlock(link, true, reason.trim())
+      .catch((err) => toastError(parseApiError(err).message))
+      .finally(() => setBusyLink({ id: '', op: '' }));
+  };
+
+  const unblock = (link) => {
+    setBusyLink({ id: link.id, op: 'unblock' });
+    applyBlock(link, false, '')
+      .catch((err) => toastError(parseApiError(err).message))
+      .finally(() => setBusyLink({ id: '', op: '' }));
+  };
+
+  const submitLinkDelete = () => {
+    if (!deletingLink) return;
+    const target = deletingLink;
+    setBusyLink({ id: target.id, op: 'delete' });
+    adminApi
+      .deleteLink(target.id)
+      .then(() => {
+        // Dropped from the table rather than refetched, matching how the account
+        // delete navigates away instead of reloading into a vanished record.
+        setData((prev) =>
+          prev ? { ...prev, links: prev.links.filter((l) => l.id !== target.id) } : prev
+        );
+        setDeletingLink(null);
+        toastSuccess(`“${target.label}” deleted`);
+      })
+      .catch((err) => toastError(parseApiError(err).message))
+      .finally(() => setBusyLink({ id: '', op: '' }));
+  };
 
   const stats = [
     { Icon: FiEye, label: 'Page views', value: analytics?.views ?? 0, hint: 'All-time visitors' },
@@ -427,7 +527,9 @@ const AdminUserDetailPage = () => {
                   Links
                 </div>
                 <div className="table-scroll">
-                  <table className="admin-table">
+                  {/* `admin-table-links` so the narrow-screen rules can drop the
+                      platform and clicks columns by position. */}
+                  <table className="admin-table admin-table-links">
                     <thead>
                       <tr>
                         <th scope="col">Link</th>
@@ -435,11 +537,14 @@ const AdminUserDetailPage = () => {
                         <th scope="col">Destination</th>
                         <th scope="col" className="num">Clicks</th>
                         <th scope="col">State</th>
+                        <th scope="col" className="ta-right">
+                          <span className="sr-only">Actions</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {links.map((link) => (
-                        <tr key={link.id}>
+                        <tr key={link.id} style={link.isBlocked ? { background: 'var(--danger-50)' } : undefined}>
                           <td>
                             <div className="row" style={{ gap: 9 }}>
                               <LinkIcon link={link} size={22} />
@@ -451,20 +556,69 @@ const AdminUserDetailPage = () => {
                             <span className="truncate" style={{ display: 'block' }} title={link.url}>
                               {link.url}
                             </span>
+                            {/* Only worth saying when the block is wider than this
+                                row, which is the part an admin cannot guess. */}
+                            {link.isBlocked && link.otherLinksWithUrl > 0 && (
+                              <span className="tiny" style={{ color: 'var(--danger)' }}>
+                                {link.otherLinksWithUrl} other link{link.otherLinksWithUrl === 1 ? '' : 's'} site-wide
+                              </span>
+                            )}
                           </td>
                           <td className="num">{formatNumber(link.clickCount || 0)}</td>
                           <td>
-                            {link.isActive ? (
+                            {link.isBlocked ? (
+                              <span className="badge badge-danger" title={link.blockedReason || 'Blocked by an administrator'}>
+                                blocked
+                              </span>
+                            ) : link.isActive ? (
                               <span className="badge badge-success">active</span>
                             ) : (
                               <span className="badge badge-neutral">hidden</span>
                             )}
+                          </td>
+                          <td className="ta-right">
+                            <div className="row" style={{ gap: 6, justifyContent: 'flex-end' }}>
+                              {/* `loading` already disables the button, so one
+                                  flag covers both states. Tracking the id rather
+                                  than a single busy boolean keeps the rest of the
+                                  table usable while one row is being actioned. */}
+                              <Button
+                                size="sm"
+                                variant={link.isBlocked ? 'outline' : 'danger'}
+                                icon={link.isBlocked ? FiCheckCircle : FiSlash}
+                                loading={busyRow(link.id, link.isBlocked ? 'unblock' : 'block')}
+                                onClick={() =>
+                                  link.isBlocked
+                                    ? unblock(link)
+                                    : setBlocking({ link, reason: '' })
+                                }
+                              >
+                                <span className="link-action-label">
+                                  {link.isBlocked ? 'Unblock' : 'Block'}
+                                </span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={FiTrash2}
+                                loading={busyRow(link.id, 'delete')}
+                                onClick={() => setDeletingLink(link)}
+                                aria-label={`Delete ${link.label}`}
+                              >
+                                <span className="link-action-label">Delete</span>
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+                <p className="tiny muted" style={{ marginTop: 12 }}>
+                  Blocking hides a link from its public page and stops its click
+                  counter. It also blocks that address site-wide, so nobody can add
+                  it again — the owner included. They are told either way.
+                </p>
               </div>
             </>
           )}
@@ -511,6 +665,105 @@ const AdminUserDetailPage = () => {
               </Button>
             </div>
           </Modal>
+
+          {/* Blocking. The scope is the part that needs spelling out: it is not
+              just this row, it is the address, everywhere. The count comes from
+              the server rather than being guessed, and the reason is what the
+              owner is shown, so it is asked for here rather than left implicit. */}
+          <Modal
+            open={blocking !== null}
+            onClose={() => (busyLink.id ? null : setBlocking(null))}
+            maxWidth={460}
+            labelledBy="block-link-title"
+          >
+            <h3 className="card-title" id="block-link-title" style={{ fontSize: 18, marginBottom: 6 }}>
+              Block &ldquo;{blocking?.link.label}&rdquo;?
+            </h3>
+            <p className="confirm-text">
+              It disappears from the public page and stops counting clicks.{' '}
+              <strong>{blocking?.link.url}</strong> is also blocked site-wide, so
+              nobody can add it again &mdash; including{' '}
+              <strong>@{user?.username}</strong> themselves.
+            </p>
+
+            {blocking?.link.otherLinksWithUrl > 0 && (
+              <div
+                className="card card-pad"
+                style={{ marginTop: 12, background: 'var(--danger-50)', borderColor: 'transparent' }}
+              >
+                <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
+                  <div className="small strong" style={{ color: '#b91c1c' }}>
+                    <FiAlertTriangle style={{ verticalAlign: '-2px', marginRight: 6 }} />
+                    This is wider than one link
+                  </div>
+                </div>
+                <p className="small" style={{ color: '#7f1d1d', margin: '4px 0 0' }}>
+                  <strong>{formatNumber(blocking.link.otherLinksWithUrl)}</strong> other link
+                  {blocking.link.otherLinksWithUrl === 1 ? '' : 's'} on other account
+                  {blocking.link.otherLinksWithUrl === 1 ? '' : 's'} point at the same
+                  address. They go down too.
+                </p>
+              </div>
+            )}
+
+            <label className="small strong" style={{ display: 'block', margin: '14px 0 6px' }} htmlFor="block-reason">
+              Reason (the owner sees this)
+            </label>
+            <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {['Spam or scam', 'Phishing', 'Impersonating someone else', 'Broken or unsafe'].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setBlocking((b) => ({ ...b, reason: preset }))}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+            <textarea
+              id="block-reason"
+              className="input"
+              rows={3}
+              maxLength={280}
+              value={blocking?.reason || ''}
+              onChange={(e) => setBlocking((b) => ({ ...b, reason: e.target.value }))}
+              placeholder="Why this link is being taken down."
+            />
+            <div className="row" style={{ justifyContent: 'space-between', marginTop: 6 }}>
+              <span className="tiny muted">Optional, but they will ask.</span>
+              <span className="tiny muted">{(blocking?.reason || '').length}/280</span>
+            </div>
+
+            <div className="modal-actions">
+              <Button variant="ghost" onClick={() => setBlocking(null)} disabled={busyLink.id !== ''}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                icon={FiSlash}
+                loading={busyRow(blocking?.link.id, 'block')}
+                onClick={submitBlock}
+              >
+                Block link
+              </Button>
+            </div>
+          </Modal>
+
+          <ConfirmDialog
+            open={deletingLink !== null}
+            title={`Delete &ldquo;${deletingLink?.label}&rdquo;?`}
+            message={
+              deletingLink?.isBlocked
+                ? 'This link is already blocked, so deleting it will not let the address back in. To let it in again, unblock it first.'
+                : 'This removes the link and its click history for good. To stop it without deleting it, block it instead.'
+            }
+            confirmLabel="Delete link"
+            icon={<FiTrash2 />}
+            loading={busyRow(deletingLink?.id, 'delete')}
+            onConfirm={submitLinkDelete}
+            onClose={() => (busyLink.id ? undefined : setDeletingLink(null))}
+          />
 
           <Modal open={resetOpen} onClose={() => setResetOpen(false)} maxWidth={430} labelledBy="reset-password-title">
             <h3 className="card-title" id="reset-password-title" style={{ fontSize: 18, marginBottom: 6 }}>

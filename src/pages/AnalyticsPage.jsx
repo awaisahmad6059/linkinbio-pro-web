@@ -65,6 +65,7 @@ const AnalyticsPage = () => {
   const totals = data?.totals;
   const series = (data?.series || []).map((d) => ({ ...d, label: formatDayLabel(d.date) }));
   const linkRows = data?.links || [];
+  const blockedCount = linkRows.filter((l) => l.isBlocked).length;
   const maxClicks = linkRows.reduce((max, l) => Math.max(max, l.clickCount), 0);
 
   const stats = [
@@ -81,7 +82,12 @@ const AnalyticsPage = () => {
       Icon: FiActivity,
       label: 'Live links',
       value: totals?.activeLinks ?? 0,
-      hint: `${totals?.totalLinks ?? 0} total on your page`,
+      // Spelling out the blocked count where the "live" figure is: the number
+      // excludes them, and a link that vanished from a public page with no
+      // visible cause is worth explaining rather than leaving to be noticed.
+      hint: blockedCount
+        ? `${totals?.totalLinks ?? 0} total · ${blockedCount} blocked by an admin`
+        : `${totals?.totalLinks ?? 0} total on your page`,
     },
   ];
 
@@ -239,15 +245,27 @@ const AnalyticsPage = () => {
             ) : (
               <div style={{ paddingTop: 6 }}>
                 {linkRows.map((link, i) => (
-                  <BarRow
-                    key={link.id}
-                    label={link.label}
-                    value={link.clickCount}
-                    max={maxClicks}
-                    platform={link.platform}
-                    link={link}
-                    delay={i * 0.06}
-                  />
+                  <div className="bar-row-group" key={link.id}>
+                    <BarRow
+                      label={link.label}
+                      value={link.clickCount}
+                      max={maxClicks}
+                      platform={link.platform}
+                      link={link}
+                      delay={i * 0.06}
+                    />
+                    {/* A link that stopped collecting clicks because an admin
+                        blocked it looks identical to one nobody clicked. Saying so
+                        here stops the owner reading the flat bar as a failure of
+                        the link rather than a decision about it. */}
+                    {link.isBlocked && (
+                      <p className="tiny" style={{ color: 'var(--danger)', margin: '-4px 0 10px' }}>
+                        Blocked by an admin
+                        {link.blockedReason ? ` — ${link.blockedReason}` : ''}. These are its clicks
+                        from before.
+                      </p>
+                    )}
+                  </div>
                 ))}
               </div>
             )}

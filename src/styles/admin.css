@@ -284,4 +284,24 @@
   .admin-rank-bar {
     display: none;
   }
+
+  /* The links table scrolls horizontally, but six columns of label + URL +
+     state + two buttons is too much to read while scrolling. Platform and
+     clicks go first: the platform is shown by the icon next to the label, and
+     the click count is a number rather than something needing its own column. */
+  .admin-table-links th:nth-child(2),
+  .admin-table-links td:nth-child(2),
+  .admin-table-links th:nth-child(4),
+  .admin-table-links td:nth-child(4) {
+    display: none;
+  }
+  .admin-table-links th,
+  .admin-table-links td {
+    padding: 10px 10px;
+  }
+  /* Buttons go to icon-only, so a row's actions still fit without wrapping to
+     a second line and making every row twice as tall as it needs to be. */
+  .admin-table-links .link-action-label {
+    display: none;
+  }
 }

@@ -30,6 +30,7 @@ const LinkManager = () => {
   const setLinks = useAuthStore((s) => s.setLinks);
   const patchLink = useAuthStore((s) => s.patchLink);
   const status = useAuthStore((s) => s.status);
+  const blockedCount = links.filter((l) => l.isBlocked).length;
 
   const success = useToastStore((s) => s.success);
   const error = useToastStore((s) => s.error);
@@ -139,9 +140,17 @@ const LinkManager = () => {
             Drag the handle to reorder · toggle to hide without deleting
           </div>
         </div>
-        <span className="badge badge-neutral">
-          {links.filter((l) => l.isActive).length} live
-        </span>
+        <div className="row" style={{ gap: 8 }}>
+          {/* A blocked link is not live however its own switch is set, so it is
+              excluded here and reported separately rather than counted as live
+              and then mysteriously absent from the preview. */}
+          {blockedCount > 0 && (
+            <span className="badge badge-danger" title="Hidden from your public page by an administrator">
+              {blockedCount} blocked
+            </span>
+          )}
+          <span className="badge badge-neutral">{links.filter((l) => l.isActive && !l.isBlocked).length} live</span>
+        </div>
       </div>
 
       <div className="card-pad" style={{ paddingTop: 14 }}>

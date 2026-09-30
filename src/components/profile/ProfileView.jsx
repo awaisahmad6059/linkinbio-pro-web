@@ -45,7 +45,11 @@ export const ProfileView = ({
   className,
 }) => {
   const displayName = profile.displayName || profile.username || 'Your name';
-  const activeLinks = links.filter((l) => l.isActive !== false);
+  // Blocked links are filtered out here, not just at the API. This component also
+  // renders the dashboard's live preview, and a preview that showed a link no
+  // visitor can see would be showing something untrue — the preview's whole job
+  // is to answer "what will people see?".
+  const activeLinks = links.filter((l) => l.isActive !== false && !l.isBlocked);
 
   const body = (themeKey, layerProps = {}) => (
     <div className={cn('profile', `theme-${themeKey}`, compact && 'is-compact', isPage && 'is-page', className)} {...layerProps}>

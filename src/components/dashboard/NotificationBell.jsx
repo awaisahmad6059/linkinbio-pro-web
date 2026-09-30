@@ -7,7 +7,10 @@ import {
   FiCheckCircle,
   FiHelpCircle,
   FiKey,
+  FiLink,
   FiMail,
+  FiSlash,
+  FiTrash2,
   FiUserCheck,
   FiUserX,
   FiXCircle,
@@ -36,6 +39,9 @@ const NOTIFICATION_ICONS = {
   'password-reset': FiKey,
   'request-resolved': FiCheckCircle,
   'request-rejected': FiXCircle,
+  'link-blocked': FiSlash,
+  'link-unblocked': FiLink,
+  'link-deleted': FiTrash2,
   'admin-message': FiMail,
 };
 
@@ -64,6 +70,12 @@ const targetFor = (n) => {
     case 'request-resolved':
     case 'request-rejected':
       return '/dashboard';
+    // A link decision is only actionable where the links are, so these go
+    // straight to the list the admin acted on rather than the dashboard root.
+    case 'link-blocked':
+    case 'link-unblocked':
+    case 'link-deleted':
+      return '/dashboard/links';
     default:
       return null;
   }

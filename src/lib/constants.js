@@ -110,5 +110,8 @@ export const NOTIFICATION_TONES = {
   'password-reset': { tone: 'warn' },
   'request-resolved': { tone: 'ok' },
   'request-rejected': { tone: 'danger' },
+  'link-blocked': { tone: 'danger' },
+  'link-unblocked': { tone: 'ok' },
+  'link-deleted': { tone: 'warn' },
   'admin-message': { tone: 'brand' },
 };

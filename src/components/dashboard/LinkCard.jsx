@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FiEdit2, FiMousePointer, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiMousePointer, FiSlash, FiTrash2 } from 'react-icons/fi';
 import Switch from '../common/Switch.jsx';
 import LinkIcon from '../common/LinkIcon.jsx';
 import { cn } from '../../lib/utils.js';
@@ -17,12 +17,22 @@ import { displayAddress } from '../../lib/linkUrl.js';
  */
 const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link._id });
+  // A blocked link is hidden from the public page by an admin. The show/hide
+  // switch is not merely disabled for it — leaving it live would invite a
+  // pointless "why is my page empty" support request, since flipping it back on
+  // changes nothing at all.
+  const blocked = !!link.isBlocked;
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={cn('link-card', !link.isActive && 'is-inactive', isDragging && 'is-dragging')}
+      className={cn(
+        'link-card',
+        !link.isActive && !blocked && 'is-inactive',
+        blocked && 'is-blocked',
+        isDragging && 'is-dragging'
+      )}
     >
       <button
         className="link-handle"
@@ -45,6 +55,13 @@ const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy
       <div className="link-card-body">
         <span className="link-card-title">{link.label}</span>
         <span className="link-card-url">{displayAddress(link)}</span>
+        {blocked && (
+          <span className="link-blocked-note">
+            <FiSlash aria-hidden="true" />
+            Blocked by an admin
+            {link.blockedReason ? ` — ${link.blockedReason}` : ''}. Only they can bring it back.
+          </span>
+        )}
       </div>
 
       <span className="link-stat" title={`${link.clickCount} clicks`}>
@@ -63,12 +80,23 @@ const LinkCard = memo(function LinkCard({ link, onEdit, onDelete, onToggle, busy
         >
           <FiTrash2 />
         </button>
-        <Switch
-          checked={!!link.isActive}
-          onChange={(next) => onToggle(link, next)}
-          disabled={busy}
-          label={`${link.isActive ? 'Hide' : 'Show'} ${link.label}`}
-        />
+        {blocked ? (
+          // Not a disabled switch. A switch that does nothing is worse than no
+          // switch: it looks like a control and reads as a bug.
+          <span
+            className="link-blocked-pill"
+            title="An administrator blocked this link. It cannot be shown from your dashboard."
+          >
+            blocked
+          </span>
+        ) : (
+          <Switch
+            checked={!!link.isActive}
+            onChange={(next) => onToggle(link, next)}
+            disabled={busy}
+            label={`${link.isActive ? 'Hide' : 'Show'} ${link.label}`}
+          />
+        )}
       </div>
     </div>
   );
@@ -80,7 +108,10 @@ export default LinkCard;
 export const LinkCardOverlay = ({ link }) => {
   return (
     <motion.div
-      className="link-card is-overlay"
+      // Carries the blocked tint too. A drag preview that drops the marker would
+      // show a blocked link looking live for the length of the drag, which is
+      // exactly the state the marker exists to prevent.
+      className={cn('link-card is-overlay', link.isBlocked && 'is-blocked')}
       initial={{ scale: 1, rotate: 0 }}
       animate={{ scale: 1.03, rotate: -1.2, y: -3 }}
       transition={{ type: 'spring', stiffness: 420, damping: 26 }}
@@ -97,6 +128,12 @@ export const LinkCardOverlay = ({ link }) => {
       <div className="link-card-body">
         <span className="link-card-title">{link.label}</span>
         <span className="link-card-url">{displayAddress(link)}</span>
+        {link.isBlocked && (
+          <span className="link-blocked-note">
+            <FiSlash aria-hidden="true" />
+            Blocked by an admin
+          </span>
+        )}
       </div>
     </motion.div>
   );

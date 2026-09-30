@@ -743,6 +743,7 @@ ol {
 .badge-brand { background: var(--brand-50); color: var(--brand-700); }
 .badge-success { background: var(--success-50); color: #047857; }
 .badge-warn { background: var(--warn-50); color: #b45309; }
+.badge-danger { background: var(--danger-50); color: #b91c1c; }
 .badge-neutral { background: var(--line-soft); color: var(--ink-500); }
 
 /* The verified mark: a blue tick in a blue disc, the way Instagram and WhatsApp

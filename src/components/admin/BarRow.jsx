@@ -26,6 +26,14 @@ export const BarRow = ({ label, value, max, platform, link, delay = 0, valueLabe
         <span className="truncate" title={label}>
           {label}
         </span>
+        {/* A blocked link still holds the clicks it earned before it was taken
+            down, so its bar is not zero — but it is collecting nothing further.
+            Marking it here stops the number being read as still-growing. */}
+        {link?.isBlocked && (
+          <span className="bar-row-flag" title={link.blockedReason || 'Blocked by an administrator'}>
+            blocked
+          </span>
+        )}
       </div>
       <div className="bar-row-track">
         <motion.div

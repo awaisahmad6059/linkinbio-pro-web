@@ -199,6 +199,52 @@
   text-decoration: line-through;
   text-decoration-color: var(--ink-300);
 }
+
+/* Blocked by an admin. Tinted red rather than grey, because grey means "you
+   chose to hide this" and red means "someone took this down" — the two need to
+   be told apart at a glance. The title keeps its strike-through so a blocked
+   link and a hidden one never look identical. */
+.link-card.is-blocked {
+  background: var(--danger-50);
+  border-color: transparent;
+}
+.link-card.is-blocked:hover {
+  border-color: var(--danger);
+}
+.link-card.is-blocked .link-card-title {
+  color: var(--ink-500);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-300);
+}
+.link-blocked-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #b91c1c;
+  margin-top: 3px;
+  /* Wraps to a second line, unlike the address above it: the reason is a
+     sentence and truncating it would hide the part that explains itself. */
+  white-space: normal;
+}
+.link-blocked-note svg {
+  flex: none;
+  margin-top: 1px;
+}
+.link-blocked-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--r-full);
+  background: var(--danger-50);
+  color: #b91c1c;
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: default;
+}
 .link-card.is-dragging {
   box-shadow: var(--sh-lg);
   border-color: var(--brand-300);
@@ -650,6 +696,30 @@
 .bar-row + .bar-row {
   border-top: 1px solid var(--line-soft);
 }
+
+/* Wraps a BarRow plus whatever note sits under it. The divider moves to the
+   group so an annotated row still has one rule between it and the next, rather
+   than the note landing up against the row above. */
+.bar-row-group + .bar-row-group {
+  border-top: 1px solid var(--line-soft);
+}
+.bar-row-group > .bar-row:first-child {
+  padding-top: 10px;
+}
+.bar-row-flag {
+  flex: none;
+  padding: 0 7px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--r-full);
+  background: var(--danger-50);
+  color: #b91c1c;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  cursor: default;
+}
 .bar-row-name {
   width: 34%;
   min-width: 0;
@@ -800,5 +870,14 @@
   }
   .phone-screen {
     height: 500px;
+  }
+  /* The blocked note is a sentence, so it is allowed to wrap — but the pill
+     that shares the row with the label is not, or the label gets squeezed to
+     nothing on the narrowest screens. */
+  .bar-row-flag {
+    display: none;
+  }
+  .link-blocked-note {
+    font-size: 11px;
   }
 }
