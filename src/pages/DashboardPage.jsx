@@ -7,6 +7,7 @@ import AppShell from '../components/layout/AppShell.jsx';
 import ProfileEditor from '../components/dashboard/ProfileEditor.jsx';
 import LinkManager from '../components/dashboard/LinkManager.jsx';
 import ThemePicker from '../components/dashboard/ThemePicker.jsx';
+import CoverEditor from '../components/dashboard/CoverEditor.jsx';
 import LivePreview from '../components/dashboard/LivePreview.jsx';
 import VerifyRequestModal from '../components/dashboard/VerifyRequestModal.jsx';
 import Button from '../components/common/Button.jsx';
@@ -16,6 +17,7 @@ import { useAuthStore } from '../store/authStore.js';
 import { useToastStore } from '../store/toastStore.js';
 import { authApi, parseApiError } from '../lib/api.js';
 import { getTheme } from '../lib/constants.js';
+import { normalizeCover } from '../lib/cover.js';
 
 const DashboardPage = () => {
   const user = useAuthStore((s) => s.user);
@@ -26,6 +28,17 @@ const DashboardPage = () => {
   const error = useToastStore((s) => s.error);
 
   const [theme, setTheme] = useState(user?.selectedTheme || 'gradient');
+  // The `custom` theme's photo and adjustments, as one object the editor writes
+  // into and every preview reads from.
+  //
+  // Deliberately seeded from the account exactly once and never re-synced after:
+  // this is the live draft, and the account in the store is the server's echo of
+  // whatever was last saved. Pulling the echo back in would undo whatever the
+  // user has dialled in since — the same reason the preview has to stay ahead of
+  // the save rather than follow it.
+  const [cover, setCover] = useState(() =>
+    normalizeCover({ image: user?.coverImage, ...(user?.coverSettings || {}) })
+  );
   const [publishing, setPublishing] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [justPublished, setJustPublished] = useState(false);
@@ -150,7 +163,19 @@ const DashboardPage = () => {
             <div className="dash-col">
               <ProfileEditor />
               <LinkManager />
-              <ThemePicker value={theme} onChange={onThemeChange} />
+              <ThemePicker value={theme} onChange={onThemeChange} cover={cover} />
+
+              {/* Only for the theme it belongs to. The photo and its adjustments
+                  are kept whatever theme is selected, so switching to `dark` for
+                  a week and coming back must not cost the user their upload. */}
+              {theme === 'custom' && (
+                <CoverEditor
+                  cover={cover}
+                  setCover={setCover}
+                  profile={previewProfile}
+                  links={links}
+                />
+              )}
 
               <div className="card card-pad" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <span className="stat-icon" style={{ background: getTheme(theme).accent.includes('gradient') ? 'var(--brand-50)' : 'var(--line-soft)' }}>
@@ -159,13 +184,13 @@ const DashboardPage = () => {
                 <div className="grow">
                   <div className="small strong">Autosave is on</div>
                   <div className="tiny muted">
-                    Profile, theme and link changes are saved as you make them.
+                    Profile, theme, background and link changes are saved as you make them.
                   </div>
                 </div>
               </div>
             </div>
 
-            <LivePreview profile={previewProfile} links={links} theme={theme} />
+            <LivePreview profile={previewProfile} links={links} theme={theme} cover={cover} />
           </div>
         </div>
       </PageTransition>

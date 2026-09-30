@@ -57,6 +57,15 @@ export const THEMES = [
     blurb: 'Calm & warm',
     accent: '#E7ECDC',
   },
+  {
+    // The only theme with no fixed palette of its own: it takes its background
+    // from a photo the user uploads, which is why the accent is a gradient —
+    // a single swatch would misrepresent every possible cover.
+    key: 'custom',
+    name: 'Custom Photo',
+    blurb: 'Your own background',
+    accent: 'linear-gradient(135deg,#2e1065,#6d28d9 45%,#db2777)',
+  },
 ];
 
 export const THEME_MAP = Object.fromEntries(THEMES.map((t) => [t.key, t]));

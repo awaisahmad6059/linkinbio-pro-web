@@ -3,6 +3,7 @@ import { FiArrowUpRight } from 'react-icons/fi';
 import LinkIcon from '../common/LinkIcon.jsx';
 import VerifiedBadge from '../common/VerifiedBadge.jsx';
 import { cn } from '../../lib/utils.js';
+import { coverStyle } from '../../lib/cover.js';
 import { opensInNewTab, OUTBOUND_REL, toDestination as destOf } from '../../lib/linkUrl.js';
 
 /* Link button entrance — staggered slide-up so the list "reveals" itself. */
@@ -43,6 +44,7 @@ export const ProfileView = ({
   crossfade = false,
   isPage = false,
   className,
+  cover,
 }) => {
   const displayName = profile.displayName || profile.username || 'Your name';
   // Blocked links are filtered out here, not just at the API. This component also
@@ -51,8 +53,16 @@ export const ProfileView = ({
   // is to answer "what will people see?".
   const activeLinks = links.filter((l) => l.isActive !== false && !l.isBlocked);
 
+  // The `custom` theme's photo and adjustments, as CSS custom properties.
+  //
+  // Applied unconditionally rather than behind `theme === 'custom'`, because the
+  // rules that consume them live on `.theme-custom` and every other theme simply
+  // ignores them. One code path, so the theme tile, the live preview and the
+  // published page cannot each grow their own idea of how a cover is drawn.
+  const backdrop = cover ? coverStyle(cover) : undefined;
+
   const body = (themeKey, layerProps = {}) => (
-    <div className={cn('profile', `theme-${themeKey}`, compact && 'is-compact', isPage && 'is-page', className)} {...layerProps}>
+    <div className={cn('profile', `theme-${themeKey}`, compact && 'is-compact', isPage && 'is-page', className)} style={backdrop} {...layerProps}>
       <div className="profile-inner">
         {/* Photo fades + scales in first, so the page feels like it reveals itself */}
         <motion.div

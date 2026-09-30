@@ -119,11 +119,19 @@ const PublicProfilePage = () => {
 
   if (!data) return <ProfileSkeleton />;
 
+  // Built only when there is a photo, and handed over as one object. Passing an
+  // empty cover would push a few hundred kilobytes of data URL into the style
+  // attribute of every page — including the five themes that never read it.
+  const cover = data.profile.coverImage
+    ? { image: data.profile.coverImage, ...data.profile.coverSettings }
+    : undefined;
+
   return (
     <PageTransition>
       <ProfileView
         isPage
         theme={data.profile.selectedTheme}
+        cover={cover}
         profile={data.profile}
         links={data.links}
         onLinkClick={onLinkClick}

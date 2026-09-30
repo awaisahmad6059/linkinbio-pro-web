@@ -512,6 +512,114 @@
 }
 
 /* ==========================================================================
+   6. Custom Photo — the user's own image, filling the whole screen
+   ========================================================================== */
+
+/*
+ * The only theme whose background comes from outside the stylesheet, so it is
+ * the only one that has to defend against the unknown: an arbitrary photograph
+ * can be as light as a sheet of paper, and the page draws white text over it.
+ *
+ * Three layers, in this order, and the split is deliberate:
+ *
+ *   ::before  the photo — the only layer the blur, brightness and zoom apply
+ *            to, so moving a slider changes the picture and nothing else.
+ *   ::after   the veil — a fixed darkening between the photo and the text. It is
+ *            deliberately NOT affected by the brightness slider. Brightness is
+ *            there for the photo; legibility is not something the user should be
+ *            able to talk themselves out of, and a white photo at full
+ *            brightness with no veil would make the name unreadable.
+ *   .profile  its own background, showing through as the fallback when no image
+ *            has been uploaded yet.
+ *
+ * `zoom` starts at 1, which is `background-size: cover`: the photo fills the
+ * screen in both directions with no stretching and no gap. So it is already the
+ * promised "fits the whole screen", and the slider can only crop further in.
+ * Combined with the two position knobs, that is a crop control that never
+ * touches the original image.
+ */
+.theme-custom {
+  --pf-bg: #12121a;
+  --pf-bg-image: radial-gradient(1000px 600px at 50% -10%, #2a2547 0%, #12121a 62%);
+  --pf-text: #ffffff;
+  --pf-sub: rgba(255, 255, 255, 0.82);
+  /* Solid white buttons with dark text, for the same reason as the veil: the
+     link list has to stay readable no matter what is behind it. */
+  --pf-btn-bg: #ffffff;
+  --pf-btn-text: #16161d;
+  --pf-btn-border: rgba(255, 255, 255, 0.5);
+  --pf-btn-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --pf-btn-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.36);
+  --pf-avatar-ring: rgba(255, 255, 255, 0.85);
+  --pf-accent: #a78bfa;
+  --pf-avatar-shadow: 0 0 0 4px rgba(255, 255, 255, 0.28), 0 16px 40px rgba(0, 0, 0, 0.42);
+  --pf-radius: 16px;
+  --pf-title-weight: 750;
+
+  /* Defaults, so the theme is complete on its own. `coverStyle()` overrides all
+     six from inline styles; these are what a profile with no cover yet uses. */
+  --pf-cover: none;
+  --pf-cover-zoom: 1;
+  --pf-cover-x: 50%;
+  --pf-cover-y: 50%;
+  --pf-cover-blur: 0px;
+  --pf-cover-bright: 1;
+  --pf-cover-dim: 0.45;
+}
+
+/* The photo. Sized to bleed past the page edges in proportion to the blur, so a
+   blurred backdrop never shows a soft border where the image stops. At zero blur
+   that resolves to no bleed at all and the photo is composed exactly as the
+   browser would lay it out. */
+.theme-custom::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--pf-cover-blur) * -2.6);
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--pf-cover);
+  background-repeat: no-repeat;
+  background-position: var(--pf-cover-x) var(--pf-cover-y);
+  background-size: cover;
+  background-color: transparent;
+  filter: blur(var(--pf-cover-blur)) brightness(var(--pf-cover-bright));
+  transform: scale(var(--pf-cover-zoom));
+}
+
+/* The veil. Fixed, and outside the brightness filter, for the reason above. */
+.theme-custom::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(6, 6, 12, calc(var(--pf-cover-dim) * 1.15)) 0%,
+    rgba(6, 6, 12, var(--pf-cover-dim)) 45%,
+    rgba(6, 6, 12, calc(var(--pf-cover-dim) * 1.25)) 100%
+  );
+}
+
+/* With no photo uploaded, `--pf-cover` is `none`, so `background-image` on the
+   layer above resolves to nothing and what shows through is `.profile`'s own
+   dark gradient. Picking the theme before uploading still looks like a choice
+   rather than an empty page, with no extra rule needed to special-case it. */
+
+.theme-custom .plink:hover {
+  background: #f6f5ff;
+  border-color: #fff;
+}
+.theme-custom .profile-footer {
+  opacity: 0.7;
+}
+
+/* A bright ring around the avatar, because the photo behind it can be anything. */
+.theme-custom .profile-avatar {
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* ==========================================================================
    Compact mode — used inside the dashboard phone mockup
    ========================================================================== */
 

@@ -185,3 +185,85 @@ export const resizeImageToDataUrl = (file, { size = 128, maxKB = 100 } = {}) =>
 /** Base URL used when telling the user where to share their page. */
 export const publicOrigin = () =>
   import.meta.env.VITE_PUBLIC_URL || window.location.origin;
+
+/**
+ * Reads a full-bleed background photo and re-encodes it to something worth
+ * storing.
+ *
+ * The naive version of this — hand the file over as-is — fails in both
+ * directions. A 6MB phone photo is far more than the API will accept and far
+ * more detail than a blurred backdrop behind a text column can show, while a
+ * small image is rejected for being small when it was only small in bytes.
+ *
+ * So the image is drawn to a canvas scaled to fit `maxEdge`, then encoded as
+ * JPEG at a quality walked downwards until it fits `maxKB`. Scaling first does
+ * most of the work on its own — a 12-megapixel photo re-encoded at 1600px is
+ * usually well inside the budget at full quality.
+ *
+ * SVG is refused for the same reason the API refuses it: it is a
+ * script-bearing document, and this string ends up as a background on a public
+ * page. GIF is refused because a static cover has no use for animation, and
+ * because a canvas draw would only ever capture its first frame anyway.
+ */
+export const resizeCoverToDataUrl = (
+  file,
+  { maxEdge = 1600, maxKB = 300 } = {}
+) =>
+  new Promise((resolve, reject) => {
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!file) {
+      reject(new Error('Choose an image file'));
+      return;
+    }
+    if (!allowed.includes(String(file.type).toLowerCase())) {
+      reject(new Error('Use a PNG, JPG or WebP image'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that image'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That file is not a readable image'));
+      img.onload = () => {
+        const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+        const width = Math.max(1, Math.round(img.naturalWidth * scale));
+        const height = Math.max(1, Math.round(img.naturalHeight * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Your browser could not process that image'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Walk the quality down rather than making the user pick a smaller photo
+        // because of a byte count they never asked for.
+        for (const quality of [0.82, 0.72, 0.62, 0.52, 0.42]) {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          if (dataUrl.length / 1024 <= maxKB) {
+            resolve(dataUrl);
+            return;
+          }
+        }
+
+        // Still too big: drop the long edge and try once more before giving up,
+        // since a softer image is much better than no image at all.
+        canvas.width = Math.max(1, Math.round(width * 0.75));
+        canvas.height = Math.max(1, Math.round(height * 0.75));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const retry = canvas.toDataURL('image/jpeg', 0.5);
+        if (retry.length / 1024 <= maxKB) {
+          resolve(retry);
+          return;
+        }
+
+        reject(new Error('That photo is too detailed to use as a background — try a simpler one'));
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });

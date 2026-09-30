@@ -1,13 +1,20 @@
 import { motion } from 'framer-motion';
 import { THEME_MAP, THEMES } from '../../lib/constants.js';
 import { ProfileView } from '../profile/ProfileView.jsx';
+import { SAMPLE_COVER } from '../../lib/cover.js';
 
 /**
  * Theme picker: a horizontally scrollable row of real rendered mockups
  * (not flat swatches). Selecting one instantly updates the live preview, which
  * crossfades in the dashboard panel.
+ *
+ * The `custom` tile shows the user's own uploaded photo and the adjustments as
+ * they stand, not a stand-in — so it doubles as a second, glanceable answer to
+ * "what have I actually done to my background". With nothing uploaded yet it
+ * falls back to the built-in sample, which is also what the landing page and the
+ * "no photo yet" preview use.
  */
-const ThemePicker = ({ value, onChange }) => (
+const ThemePicker = ({ value, onChange, cover }) => (
   <div className="card">
     <div className="card-head">
       <div>
@@ -22,6 +29,12 @@ const ThemePicker = ({ value, onChange }) => (
     <div className="theme-row" role="radiogroup" aria-label="Page theme">
       {THEMES.map((theme) => {
         const active = theme.key === value;
+        // Only the custom tile draws a background, and it draws the user's own —
+        // so the tile is a second, glanceable answer to "what have I done to my
+        // background". With nothing uploaded it falls back to the same sample the
+        // landing page uses.
+        const tileCover =
+          theme.key === 'custom' ? (cover?.image ? cover : SAMPLE_COVER) : undefined;
         return (
           <motion.button
             key={theme.key}
@@ -37,6 +50,7 @@ const ThemePicker = ({ value, onChange }) => (
                 compact
                 animate={false}
                 theme={theme.key}
+                cover={tileCover}
                 profile={{ displayName: 'Your Name', username: 'yourname', bio: 'A short line about you' }}
                 links={[
                   { _id: 's1', label: 'Shop my store', platform: 'instagram', isActive: true },

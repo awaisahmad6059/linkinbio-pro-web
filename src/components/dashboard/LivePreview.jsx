@@ -11,9 +11,11 @@ import { publicOrigin } from '../../lib/utils.js';
  *
  * Renders the *real* `ProfileView` component inside a phone frame, so what the
  * user builds here is exactly what visitors get. Theme changes crossfade and
- * edits appear as they are typed.
+ * edits appear as they are typed — including every drag of a background
+ * adjustment, because the cover is passed in as the live draft rather than
+ * being read back from the saved profile.
  */
-const LivePreview = ({ profile, links, theme }) => {
+const LivePreview = ({ profile, links, theme, cover }) => {
   const info = useToastStore((s) => s.info);
   const user = useAuthStore((s) => s.user);
 
@@ -44,6 +46,7 @@ const LivePreview = ({ profile, links, theme }) => {
               profile={profile}
               links={links}
               theme={theme}
+              cover={cover}
               compact
               animate={false}
               crossfade

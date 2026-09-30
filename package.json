@@ -12,7 +12,8 @@
     "verify:platforms": "node scripts/verify-platforms.mjs",
     "verify:linkurl": "node scripts/verify-linkurl.mjs",
     "verify:icons": "node scripts/verify-icons.mjs",
-    "verify": "npm run verify:platforms && npm run verify:linkurl && npm run verify:icons"
+    "verify:cover": "node scripts/verify-cover.mjs",
+    "verify": "npm run verify:platforms && npm run verify:linkurl && npm run verify:icons && npm run verify:cover"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",

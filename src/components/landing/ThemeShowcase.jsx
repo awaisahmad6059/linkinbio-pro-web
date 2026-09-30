@@ -1,6 +1,7 @@
 import { RevealSection } from '../common/PageTransition.jsx';
 import { THEMES } from '../../lib/constants.js';
 import { ProfileView } from '../profile/ProfileView.jsx';
+import { SAMPLE_COVER } from '../../lib/cover.js';
 
 const SAMPLE_PROFILE = {
   displayName: 'Awais Ahmad',
@@ -20,10 +21,11 @@ const ThemeShowcase = () => (
     <div className="container">
       <RevealSection className="section-head">
         <span className="section-eyebrow">Themes</span>
-        <h2 className="section-title">Five looks, one click apart</h2>
+        <h2 className="section-title">Six looks, one click apart</h2>
         <p className="section-sub">
           Each theme is a real rendered page, so what you pick is exactly what your visitors get.
-          You can switch at any time — nothing breaks.
+          The last one is yours — upload a photo, blur it, move it, darken it. You can switch at any
+          time — nothing breaks.
         </p>
       </RevealSection>
 
@@ -37,6 +39,10 @@ const ThemeShowcase = () => (
                   compact={false}
                   animate={false}
                   showFooter={false}
+                  /* The only theme that needs a photo to look like anything, so
+                     it gets the stand-in image. A real visitor's own upload is
+                     substituted in the dashboard tile. */
+                  cover={theme.key === 'custom' ? SAMPLE_COVER : undefined}
                   profile={SAMPLE_PROFILE}
                   links={SAMPLE_LINKS}
                 />
