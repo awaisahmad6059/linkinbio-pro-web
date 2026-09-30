@@ -70,12 +70,15 @@ const targetFor = (n) => {
     case 'request-resolved':
     case 'request-rejected':
       return '/dashboard';
-    // A link decision is only actionable where the links are, so these go
-    // straight to the list the admin acted on rather than the dashboard root.
+    // A link decision is only actionable where the links are. There is no
+    // separate links page — the list is the top of the dashboard — so this is
+    // the same target as the request outcomes. Pointing at a path that is not
+    // registered would land the user on the 404 page from inside a
+    // notification, which is the worst place to discover the route is wrong.
     case 'link-blocked':
     case 'link-unblocked':
     case 'link-deleted':
-      return '/dashboard/links';
+      return '/dashboard';
     default:
       return null;
   }
